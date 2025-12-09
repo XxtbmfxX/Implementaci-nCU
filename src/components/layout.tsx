@@ -1,10 +1,9 @@
-import { ReactNode, useState } from 'react';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useAuth } from '../lib/auth-context';
 import { 
   Users, 
   Calendar, 
-  FileText, 
-  Settings, 
   LogOut, 
   Menu, 
   X,

@@ -22,6 +22,15 @@ type ChartContextProps = {
   config: ChartConfig;
 };
 
+type TooltipPayloadItem = {
+  name?: string;
+  value?: number;
+  color?: string;
+  dataKey?: string;
+  payload: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 
 function useChart() {
@@ -169,6 +178,7 @@ function ChartTooltipContent({
   }
 
   const nestLabel = payload.length === 1 && indicator !== "dot";
+  const items = (payload ?? []) as TooltipPayloadItem[];
 
   return (
     <div
@@ -179,7 +189,7 @@ function ChartTooltipContent({
     >
       {!nestLabel ? tooltipLabel : null}
       <div className="grid gap-1.5">
-        {payload.map((item, index) => {
+        {items.map((item: TooltipPayloadItem, index: number) => {
           const key = `${nameKey || item.name || item.dataKey || "value"}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
           const indicatorColor = color || item.payload.fill || item.color;
@@ -193,7 +203,7 @@ function ChartTooltipContent({
               )}
             >
               {formatter && item?.value !== undefined && item.name ? (
-                formatter(item.value, item.name, item, index, item.payload)
+                formatter(item.value, item.name as string, item as unknown as any, index, items as unknown as any)
               ) : (
                 <>
                   {itemConfig?.icon ? (

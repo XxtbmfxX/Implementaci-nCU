@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { apiClient, Cita, Paciente } from '../lib/api-client';
+import { apiClient } from '../lib/api-client';
+import type { Cita, Paciente } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
 import { Plus, Calendar as CalendarIcon, Clock, User, X, Check } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
@@ -21,7 +22,6 @@ export function AgendaView() {
 
   const getDateRange = () => {
     const hoy = new Date();
-    const inicio = new Date(hoy);
     const fin = new Date(hoy);
 
     if (periodo === 'dia') {

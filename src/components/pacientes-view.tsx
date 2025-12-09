@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { apiClient, Paciente } from '../lib/api-client';
+import { apiClient } from '../lib/api-client';
+import type { Paciente } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
-import { Plus, Search, Edit2, FileText, Trash2, X } from 'lucide-react';
+import { Plus, Search, Edit2, FileText, X } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { validate as validateRut, format as formatRut } from 'rut.js';
 

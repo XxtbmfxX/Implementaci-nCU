@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { apiClient, AuditLog } from '../lib/api-client';
+import { apiClient } from '../lib/api-client';
+import type { AuditLog } from '../lib/api-client';
 import { Shield, Search, Calendar, User, FileText } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { apiClient, User } from '../lib/api-client';
+import { apiClient } from '../lib/api-client';
+import type { User } from '../lib/api-client';
 import { Plus, Search, Edit2, X, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 

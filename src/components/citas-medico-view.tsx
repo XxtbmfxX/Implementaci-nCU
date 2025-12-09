@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { apiClient, Cita } from '../lib/api-client';
+import { apiClient } from '../lib/api-client';
+import type { Cita } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
-import { Calendar as CalendarIcon, Clock, User, FileText, Save } from 'lucide-react';
+import { Clock, User, FileText, Save } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
 export function CitasMedicoView() {

@@ -65,7 +65,6 @@ export interface AuditLog {
 }
 
 class ApiClient {
-  private baseUrl = "/api";
   private token: string | null = null;
 
   setToken(token: string | null) {
@@ -89,14 +88,15 @@ class ApiClient {
     options: RequestInit = {},
   ): Promise<T> {
     const token = this.getToken();
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-      ...options.headers,
-    };
+    const headers = new Headers(options.headers as HeadersInit);
+    headers.set("Content-Type", "application/json");
 
     if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+      headers.set("Authorization", `Bearer ${token}`);
     }
+
+    // Replace headers in options for potential real fetch
+    const requestOptions: RequestInit = { ...options, headers };
 
     // Mock implementation - simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -110,7 +110,7 @@ class ApiClient {
     // return response.json();
 
     // Mock responses for demo
-    return this.getMockData(endpoint, options) as Promise<T>;
+    return this.getMockData(endpoint, requestOptions) as Promise<T>;
   }
 
   // Mock data generator
