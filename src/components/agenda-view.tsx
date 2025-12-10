@@ -63,87 +63,122 @@ export function AgendaView() {
     }
   };
 
-  const handleSaveCita = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const fecha = formData.get('fecha') as string;
-    
-    // Validar fecha: no antes de hoy, no más de 1 año en el futuro
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const fechaSeleccionada = new Date(fecha);
-    const unAnoAdelante = new Date();
-    unAnoAdelante.setFullYear(unAnoAdelante.getFullYear() + 1);
-    
-    if (fechaSeleccionada < hoy) {
-      toast.error('La fecha de la cita no puede ser anterior a hoy');
+//Validacion horario citas
+
+const handleSaveCita = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  const formData = new FormData(e.currentTarget);
+  const fecha = formData.get('fecha') as string;
+
+  // Validar fecha: no antes de hoy, no más de 1 año en el futuro
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const fechaSeleccionada = new Date(fecha);
+  const unAnoAdelante = new Date();
+  unAnoAdelante.setFullYear(unAnoAdelante.getFullYear() + 1);
+
+  if (fechaSeleccionada < hoy) {
+    toast.error('La fecha de la cita no puede ser anterior a hoy');
+    return;
+  }
+
+  if (fechaSeleccionada > unAnoAdelante) {
+    toast.error('La fecha de la cita no puede ser mayor a 1 año desde hoy');
+    return;
+  }
+
+  // Obtener datos del form
+  const paciente_id = formData.get('paciente_id') as string;
+  const medico_id = user?.rol === 'MEDICO' ? user.id : (formData.get('medico_id') as string);
+  const hora_inicio = formData.get('hora_inicio') as string;
+  const hora_fin = formData.get('hora_fin') as string;
+  const tipo_consulta = formData.get('tipo_consulta') as string;
+  const motivo_categoria = formData.get('motivo_categoria') as string;
+
+  // Validaciones básicas de presencia
+  if (!paciente_id) {
+    toast.error('Seleccione un paciente');
+    return;
+  }
+  if (!medico_id) {
+    toast.error('Seleccione un médico');
+    return;
+  }
+  if (!hora_inicio || !hora_fin) {
+    toast.error('Seleccione hora de inicio y hora de término');
+    return;
+  }
+
+  // Helper: convierte "HH:MM" -> minutos desde medianoche (number)
+  const timeToMinutes = (t: string) => {
+    const [hh, mm] = t.split(':').map(Number);
+    return hh * 60 + mm;
+  };
+
+  const inicioMin = timeToMinutes(hora_inicio);
+  const finMin = timeToMinutes(hora_fin);
+
+  // 1) Validar que inicio < fin
+  if (inicioMin >= finMin) {
+    toast.error('La hora de inicio debe ser anterior a la hora de término');
+    return;
+  }
+
+  // 2) Validar traslapes con otras citas del mismo médico en la misma fecha
+  try {
+    // trae todas las citas del médico para la fecha (mock-api-client soporta params)
+    const citasResp = await apiClient.getCitas({ medico_id, fecha });
+    const citasDelMedico: Cita[] = citasResp.data || [];
+
+    // Cuando editas una cita, excluye la propia cita de la comprobación
+    const otrasCitas = citasDelMedico.filter(c => (selectedCita ? c.id !== selectedCita.id : true));
+
+    // comprobar traslapes: nueva.inicio < existente.fin && nueva.fin > existente.inicio
+    const existeTraslape = otrasCitas.some((cita) => {
+      // suponemos que cita.hora_inicio y cita.hora_fin están en "HH:MM"
+      const cInicio = timeToMinutes(cita.hora_inicio);
+      const cFin = timeToMinutes(cita.hora_fin);
+      return inicioMin < cFin && finMin > cInicio;
+    });
+
+    if (existeTraslape) {
+      toast.error('El médico ya tiene una cita en ese horario (hay traslape). Elija otro horario.');
       return;
     }
-    
-    if (fechaSeleccionada > unAnoAdelante) {
-      toast.error('La fecha de la cita no puede ser mayor a 1 año desde hoy');
-      return;
-    }
-    
-    const data = {
-      paciente_id: formData.get('paciente_id') as string,
-      medico_id: user?.rol === 'MEDICO' ? user.id : (formData.get('medico_id') as string || '1'),
-      fecha,
-      hora_inicio: formData.get('hora_inicio') as string,
-      hora_fin: formData.get('hora_fin') as string,
-      tipo_consulta: formData.get('tipo_consulta') as string,
-      motivo_categoria: formData.get('motivo_categoria') as string,
-    };
+  } catch (err) {
+    console.error('Error validando traslapes:', err);
+    toast.error('Error validando disponibilidad del médico');
+    return;
+  }
 
-    try {
-      if (selectedCita) {
-        await apiClient.updateCita(selectedCita.id, data);
-        toast.success('Cita actualizada correctamente');
-      } else {
-        await apiClient.createCita(data as any);
-        toast.success('Cita creada correctamente');
-      }
-      setShowModal(false);
-      setSelectedCita(null);
-      loadData();
-    } catch (error) {
-      toast.error('Error al guardar cita');
-    }
+  // Todo ok — construir payload y guardar
+  const data = {
+    paciente_id,
+    medico_id,
+    fecha,
+    hora_inicio,
+    hora_fin,
+    tipo_consulta,
+    motivo_categoria,
   };
 
-  const handleConfirmarCita = async (citaId: string) => {
-    try {
-      // Actualización optimista
-      setCitas(prev => prev.map(c => 
-        c.id === citaId ? { ...c, estado: 'CONFIRMADA' as const } : c
-      ));
-      
-      await apiClient.updateCita(citaId, { estado: 'CONFIRMADA' });
-      toast.success('Cita confirmada');
-    } catch (error) {
-      toast.error('Error al confirmar cita');
-      // Revertir en caso de error
-      loadData();
+  try {
+    if (selectedCita) {
+      await apiClient.updateCita(selectedCita.id, data);
+      toast.success('Cita actualizada correctamente');
+    } else {
+      await apiClient.createCita(data as any);
+      toast.success('Cita creada correctamente');
     }
-  };
+    setShowModal(false);
+    setSelectedCita(null);
+    loadData();
+  } catch (error) {
+    console.error('Error al guardar cita:', error);
+    toast.error('Error al guardar cita');
+  }
+};
 
-  const handleCancelarCita = async (citaId: string) => {
-    if (!confirm('¿Está seguro de cancelar esta cita?')) return;
-    
-    try {
-      // Actualización optimista
-      setCitas(prev => prev.map(c => 
-        c.id === citaId ? { ...c, estado: 'CANCELADA' as const } : c
-      ));
-      
-      await apiClient.updateCita(citaId, { estado: 'CANCELADA' });
-      toast.success('Cita cancelada');
-    } catch (error) {
-      toast.error('Error al cancelar cita');
-      // Revertir en caso de error
-      loadData();
-    }
-  };
 
   const getEstadoColor = (estado: string) => {
     const colors = {
