@@ -46,6 +46,7 @@ export function PacientesView() {
     const nombre = formData.get('nombre') as string;
     const apellido = formData.get('apellido') as string;
     const direccion = formData.get('direccion') as string;
+    const soloLetras = /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/;
     
     // Validar RUT
     if (!validateRut(rut)) {
@@ -79,10 +80,18 @@ export function PacientesView() {
       toast.error('El nombre debe tener entre 2 y 50 caracteres');
       return;
     }
+    if (!soloLetras.test(nombre)) {
+      toast.error('El nombre solo puede contener letras');
+      return;
+    }
     
     // Validar apellido
     if (apellido.length < 2 || apellido.length > 50) {
       toast.error('El apellido debe tener entre 2 y 50 caracteres');
+      return;
+    }
+    if (!soloLetras.test(apellido)) {
+      toast.error('El apellido solo puede contener letras');
       return;
     }
     
