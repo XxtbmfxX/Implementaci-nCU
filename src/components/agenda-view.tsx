@@ -165,7 +165,7 @@ try {
   });
 
   if (existeTraslape) {
-    toast.error('El médico ya tiene una cita en ese horario (traslape). Elija otro horario.');
+    toast.error('El médico ya tiene una cita en ese horario. Elija otro horario.');
     return;
   }
 } catch (err) {
@@ -312,8 +312,8 @@ try {
                   <div className="flex items-center gap-3 mb-2">
                     <div className="flex items-center gap-2 text-sm text-gray-900">
                       <CalendarIcon className="w-4 h-4 text-gray-400" />
-                      <span>{new Date(cita.fecha).toLocaleDateString('es-CL')}</span>
-                    </div>
+                      <span>{new Date(cita.fecha + 'T00:00').toLocaleDateString('es-CL')}</span>
+                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-900">
                       <Clock className="w-4 h-4 text-gray-400" />
                       <span>{cita.hora_inicio} - {cita.hora_fin}</span>
