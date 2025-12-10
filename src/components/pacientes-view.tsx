@@ -227,6 +227,18 @@ export function PacientesView() {
                     <div className="text-xs text-gray-500">{paciente.email}</div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{paciente.prevision}</td>
+
+                  <td className="px-4 py-3">
+                  <span
+                    className={`text-xs px-2 py-1 rounded ${
+                    isPacienteActivo(paciente)
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                    }`}
+                    >
+                    {isPacienteActivo(paciente) ? 'Activo' : 'Inactivo'}
+                  </span>
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       {canViewFichas && (
