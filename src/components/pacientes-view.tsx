@@ -30,28 +30,28 @@ export function PacientesView() {
     }
   };
 
-  const isPacienteActivo = (p: Paciente) => {
+const isPacienteActivo = (p: Paciente) => {
   const s = (p as any).estado;
-  if (typeof s === "boolean") return s === true;
-  if (typeof s === "string") return ["activo", "ACTIVO", "1", "true"].includes(s);
-  return Boolean(s);
+  return s === true || s === 1 || s === "ACTIVO" || s === "activo";
 };
 
-  const handleToggleEstadoPaciente = async (paciente: Paciente) => {
+const handleToggleEstadoPaciente = async (paciente: Paciente) => {
   try {
-    const nuevoEstado = !(paciente as any).activo;
-    // Llamada al API (supongo que apiClient.updatePaciente existe)
-    const actualizado = await apiClient.updatePaciente(paciente.id, { activo: nuevoEstado } as any);
-    // Actualización local optimista (si apiClient devuelve el registro actualizado, úsalo)
-    setPacientes(prev => prev.map(p => p.id === paciente.id ? (actualizado || { ...p, activo: nuevoEstado }) : p));
+    const nuevoEstado = !isPacienteActivo(paciente);
+    
+    const actualizado = await apiClient.updatePaciente(paciente.id, { estado: nuevoEstado ? "ACTIVO" : "INACTIVO" });
+
+    setPacientes(prev =>
+      prev.map(p => p.id === paciente.id ? actualizado : p)
+    );
+
     toast.success(`Paciente ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`);
   } catch (error) {
     console.error(error);
-    toast.error('Error al cambiar estado del paciente');
-    // opcional: recargar lista
-    loadPacientes();
+    toast.error("Error al cambiar estado del paciente");
   }
 };
+
 
 
 
@@ -227,7 +227,6 @@ export function PacientesView() {
                     <div className="text-xs text-gray-500">{paciente.email}</div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{paciente.prevision}</td>
-
                   <td className="px-4 py-3">
                   <span
                     className={`text-xs px-2 py-1 rounded ${
