@@ -8,4 +8,8 @@
   Run `npm i` to install the dependencies.
 
   Run `npm run dev` to start the development server.
+
+  ## Capa de datos (mock)
+  - El cliente se resuelve vía `src/lib/api-client.ts` y actualmente usa `MockApiClient` (datos en `src/mocks/*`).
+  - Ajusta `VITE_USE_MOCKS` en `.env` (por defecto mock) para cambiar de origen cuando se integre un backend.
   

@@ -1,0 +1,40 @@
+import { Paciente } from '../domain/types';
+
+export const initialPacientes: Paciente[] = [
+  {
+    id: '1',
+    rut: '12345678-9',
+    nombre: 'Ana',
+    apellido: 'Silva',
+    fecha_nacimiento: '1985-03-15',
+    telefono: '+56912345678',
+    email: 'ana@email.com',
+    direccion: 'Av. Principal 123',
+    prevision: 'FONASA',
+    activo: true,
+  },
+  {
+    id: '2',
+    rut: '23456789-0',
+    nombre: 'Pedro',
+    apellido: 'Martínez',
+    fecha_nacimiento: '1990-07-22',
+    telefono: '+56923456789',
+    email: 'pedro@email.com',
+    direccion: 'Calle Secundaria 456',
+    prevision: 'ISAPRE',
+    activo: true,
+  },
+  {
+    id: '3',
+    rut: '34567890-1',
+    nombre: 'Carmen',
+    apellido: 'López',
+    fecha_nacimiento: '1978-11-30',
+    telefono: '+56934567890',
+    email: 'carmen@email.com',
+    direccion: 'Pasaje Los Olivos 789',
+    prevision: 'FONASA',
+    activo: true,
+  },
+];
