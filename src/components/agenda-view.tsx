@@ -437,11 +437,19 @@ try {
                 <input
                   name="fecha"
                   type="date"
-                  defaultValue={selectedCita?.fecha || new Date().toISOString().split('T')[0]}
+                  defaultValue={
+                    selectedCita?.fecha ||
+                    (() => {
+                      const d = new Date();
+                      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                      return d.toISOString().split("T")[0];
+                    })()
+                  }
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
