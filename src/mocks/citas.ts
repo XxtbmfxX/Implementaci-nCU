@@ -71,6 +71,18 @@ export function createInitialCitas(pacientes: Paciente[], medicos: User[]): Cita
       estado: 'PENDIENTE',
       motivo_categoria: 'Seguimiento',
     },
+
+    {
+      paciente_id: '3',
+      medico_id: '1',
+      fecha: toISODate(17),
+      hora_inicio: '15:00',
+      hora_fin: '16:30',
+      tipo_consulta: 'Control',
+      estado: 'PENDIENTE',
+    motivo_categoria: 'Seguimiento',
+    },
+  
   ];
 
   return entries.map((entry, index) => ({
