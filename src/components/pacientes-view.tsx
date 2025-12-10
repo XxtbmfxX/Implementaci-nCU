@@ -30,6 +30,13 @@ export function PacientesView() {
     }
   };
 
+  const isPacienteActivo = (p: Paciente) => {
+  const s = (p as any).estado;
+  if (typeof s === "boolean") return s === true;
+  if (typeof s === "string") return ["activo", "ACTIVO", "1", "true"].includes(s);
+  return Boolean(s);
+};
+
   const handleToggleEstadoPaciente = async (paciente: Paciente) => {
   try {
     const nuevoEstado = !(paciente as any).activo;
@@ -46,12 +53,7 @@ export function PacientesView() {
   }
 };
 
-const isPacienteActivo = (p: Paciente) => {
-  const s = (p as any).estado;
-  if (typeof s === "boolean") return s === true;
-  if (typeof s === "string") return ["activo", "ACTIVO", "1", "true"].includes(s);
-  return Boolean(s);
-};
+
 
   const validatePhoneNumber = (phone: string): boolean => {
     // Formato chileno: +569XXXXXXXX (móvil) o +562XXXXXXXX (fijo)
@@ -259,13 +261,15 @@ const isPacienteActivo = (p: Paciente) => {
                   title={
                     isPacienteActivo(paciente) ? "Desactivar" : "Activar"
                   }
-                  >
+                >
                   {isPacienteActivo(paciente) ? (
                     <UserX className="w-4 h-4" />
                   ) : (
                     <UserCheck className="w-4 h-4" />
                   )}
-                      </button>
+                </button>
+
+
                     </div>
                   </td>
                 </tr>
