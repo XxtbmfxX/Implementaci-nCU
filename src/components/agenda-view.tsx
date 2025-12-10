@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../lib/api-client';
-import type { Cita, Paciente } from '../lib/api-client';
+import type { Cita, Paciente, User } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
 import { Plus, Calendar as CalendarIcon, Clock, User, X, Check } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
@@ -11,6 +11,7 @@ export function AgendaView() {
   const { user } = useAuth();
   const [citas, setCitas] = useState<Cita[]>([]);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [medicos, setMedicos] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<PeriodoVista>('dia');
   const [showModal, setShowModal] = useState(false);
@@ -40,9 +41,10 @@ export function AgendaView() {
 
   const loadData = async () => {
     try {
-      const [citasRes, pacientesRes] = await Promise.all([
+      const [citasRes, pacientesRes, medicosRes] = await Promise.all([
         apiClient.getCitas({}),
         apiClient.getPacientes(),
+        (apiClient as any).getMedicos(),
       ]);
       
       // Filtrar citas según el período seleccionado
@@ -53,6 +55,7 @@ export function AgendaView() {
       
       setCitas(citasFiltradas);
       setPacientes(pacientesRes.data);
+      setMedicos(medicosRes.data || medicosRes || []);
     } catch (error) {
       toast.error('Error al cargar datos');
     } finally {
@@ -350,6 +353,25 @@ export function AgendaView() {
                   ))}
                 </select>
               </div>
+
+              {user?.rol === 'SECRETARIA' && (
+                <div>
+                  <label className="block text-sm mb-1 text-gray-700">Médico</label>
+                  <select
+                    name="medico_id"
+                    defaultValue={selectedCita?.medico_id || ''}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Seleccione un médico</option>
+                    {medicos.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm mb-1 text-gray-700">Fecha</label>
