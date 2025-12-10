@@ -124,32 +124,56 @@ const handleSaveCita = async (e: React.FormEvent<HTMLFormElement>) => {
     return;
   }
 
-  // 2) Validar traslapes con otras citas del mismo médico en la misma fecha
-  try {
-    // trae todas las citas del médico para la fecha (mock-api-client soporta params)
-    const citasResp = await apiClient.getCitas({ medico_id, fecha });
-    const citasDelMedico: Cita[] = citasResp.data || [];
+  // 2) Validar traslapes con otras citas del mismo médico en la misma fecha (mejorado)
+try {
+  // convierte "HH:MM" -> minutos desde medianoche
+  const timeToMinutes = (t: string) => {
+    if (!t) return NaN;
+    const parts = t.trim().split(':').map(Number);
+    if (parts.length !== 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) return NaN;
+    return parts[0] * 60 + parts[1];
+  };
 
-    // Cuando editas una cita, excluye la propia cita de la comprobación
-    const otrasCitas = citasDelMedico.filter(c => (selectedCita ? c.id !== selectedCita.id : true));
+  // Buffer en minutos entre citas (cambiar a 0 para sin buffer)
+  const BUFFER_MINUTES = 0; // p.ej. 10 si quieres dejar 10 minutos de margen
 
-    // comprobar traslapes: nueva.inicio < existente.fin && nueva.fin > existente.inicio
-    const existeTraslape = otrasCitas.some((cita) => {
-      // suponemos que cita.hora_inicio y cita.hora_fin están en "HH:MM"
-      const cInicio = timeToMinutes(cita.hora_inicio);
-      const cFin = timeToMinutes(cita.hora_fin);
-      return inicioMin < cFin && finMin > cInicio;
-    });
+  const inicioMin = timeToMinutes(hora_inicio);
+  const finMin = timeToMinutes(hora_fin);
 
-    if (existeTraslape) {
-      toast.error('El médico ya tiene una cita en ese horario (hay traslape). Elija otro horario.');
-      return;
-    }
-  } catch (err) {
-    console.error('Error validando traslapes:', err);
-    toast.error('Error validando disponibilidad del médico');
+  if (Number.isNaN(inicioMin) || Number.isNaN(finMin)) {
+    toast.error('Formato de hora inválido');
     return;
   }
+
+  // Trae todas las citas del médico para la fecha (mock-api-client soporta params)
+  const citasResp = await apiClient.getCitas({ medico_id, fecha });
+  const citasDelMedico: Cita[] = citasResp.data || [];
+
+  // Considerar solo citas que ocupan agenda (descartar canceladas/completadas)
+  const citasActivas = citasDelMedico.filter(c => c.estado !== 'CANCELADA' && c.estado !== 'COMPLETADA');
+
+  // Excluir la propia cita si estamos editando
+  const otrasCitas = citasActivas.filter(c => (selectedCita ? c.id !== selectedCita.id : true));
+
+  // comprobar traslapes con buffer:
+  // nueva.inicio < (existente.fin + buffer) && nueva.fin > (existente.inicio - buffer)
+  const existeTraslape = otrasCitas.some((cita) => {
+    const cInicio = timeToMinutes(cita.hora_inicio);
+    const cFin = timeToMinutes(cita.hora_fin);
+    if (Number.isNaN(cInicio) || Number.isNaN(cFin)) return false; // skip malformed
+    return (inicioMin < (cFin + BUFFER_MINUTES)) && (finMin > (cInicio - BUFFER_MINUTES));
+  });
+
+  if (existeTraslape) {
+    toast.error('El médico ya tiene una cita en ese horario (traslape). Elija otro horario.');
+    return;
+  }
+} catch (err) {
+  console.error('Error validando traslapes:', err);
+  toast.error('Error validando disponibilidad del médico');
+  return;
+}
+
 
   // Todo ok — construir payload y guardar
   const data = {
