@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiClient } from '../lib/api-client';
 import type { Paciente } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
-import { Plus, Search, Edit2, FileText, X } from 'lucide-react';
+import { Plus, Search, Edit2, FileText, X, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { validate as validateRut, format as formatRut } from 'rut.js';
 
@@ -29,6 +29,29 @@ export function PacientesView() {
       setLoading(false);
     }
   };
+
+  const handleToggleEstadoPaciente = async (paciente: Paciente) => {
+  try {
+    const nuevoEstado = !(paciente as any).activo;
+    // Llamada al API (supongo que apiClient.updatePaciente existe)
+    const actualizado = await apiClient.updatePaciente(paciente.id, { activo: nuevoEstado } as any);
+    // Actualización local optimista (si apiClient devuelve el registro actualizado, úsalo)
+    setPacientes(prev => prev.map(p => p.id === paciente.id ? (actualizado || { ...p, activo: nuevoEstado }) : p));
+    toast.success(`Paciente ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`);
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al cambiar estado del paciente');
+    // opcional: recargar lista
+    loadPacientes();
+  }
+};
+
+const isPacienteActivo = (p: Paciente) => {
+  const s = (p as any).estado;
+  if (typeof s === "boolean") return s === true;
+  if (typeof s === "string") return ["activo", "ACTIVO", "1", "true"].includes(s);
+  return Boolean(s);
+};
 
   const validatePhoneNumber = (phone: string): boolean => {
     // Formato chileno: +569XXXXXXXX (móvil) o +562XXXXXXXX (fijo)
@@ -186,6 +209,7 @@ export function PacientesView() {
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Nombre</th>
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Contacto</th>
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Previsión</th>
+                <th className="px-4 py-3 text-left text-sm text-gray-600">Estado</th>
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Acciones</th>
               </tr>
             </thead>
@@ -224,6 +248,24 @@ export function PacientesView() {
                           <Edit2 className="w-4 h-4" />
                         </button>
                       )}
+              {/* ACTIVAR / DESACTIVAR */}
+                        <button
+                          onClick={() => handleToggleEstadoPaciente(paciente)}
+                          className={`p-1 rounded ${
+                            isPacienteActivo(paciente)
+                      ? "text-red-600 hover:bg-red-50"
+                      : "text-green-600 hover:bg-green-50"
+                  }`}
+                  title={
+                    isPacienteActivo(paciente) ? "Desactivar" : "Activar"
+                  }
+                  >
+                  {isPacienteActivo(paciente) ? (
+                    <UserX className="w-4 h-4" />
+                  ) : (
+                    <UserCheck className="w-4 h-4" />
+                  )}
+                      </button>
                     </div>
                   </td>
                 </tr>
