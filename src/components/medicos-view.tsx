@@ -182,8 +182,8 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
         setMedicos(prev => prev.map(m => m.id === editingMedico.id ? updatedMedico : m));
         toast.success('Médico actualizado correctamente');
       } else {
-        const newMedico = await apiClient.createMedico(data);
-        setMedicos(prev => [...prev, newMedico]);
+        await apiClient.createMedico(data);
+        loadMedicos();
         toast.success('Médico creado correctamente');
       }
       setShowModal(false);
@@ -453,22 +453,36 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                         <option value={0}>Domingo</option>
                       </select>
 
-                      <input
-                        type="time"
+                      <select
                         value={h.inicio}
                         onChange={(e) => updateHorarioField(h.id, 'inicio', e.target.value)}
                         className="px-2 py-2 border border-gray-300 rounded-md"
                         required
-                      />
-
+                      >
+                        {[
+                          "08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
+                          "12:00","12:30","14:00","14:30","15:00","15:30","16:00","16:30",
+                          "17:00","17:30","18:00","18:30"
+                        ].map(hora => (
+                          <option key={hora} value={hora}>{hora}</option>
+                        ))}
+                      </select>
                       <div className="flex items-center gap-2">
-                        <input
-                          type="time"
+                        <select
                           value={h.fin}
-                          onChange={(e) => updateHorarioField(h.id, 'fin', e.target.value)}
+                          onChange={(e) => updateHorarioField(h.id, "fin", e.target.value)}
                           className="px-2 py-2 border border-gray-300 rounded-md"
                           required
-                        />
+                        >
+                          {[
+                            "08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
+                            "12:00","12:30","14:00","14:30","15:00","15:30","16:00","16:30",
+                            "17:00","17:30","18:00","18:30"
+                          ].map(hora => (
+                            <option key={hora} value={hora}>{hora}</option>
+                          ))}
+                        </select>
+                      </div>
                         <button
                           type="button"
                           onClick={() => removeHorarioBlock(h.id)}
