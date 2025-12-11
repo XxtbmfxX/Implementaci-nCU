@@ -69,6 +69,42 @@ export function MedicosView() {
   const [showModal, setShowModal] = useState(false);
   const [editingMedico, setEditingMedico] = useState<User | null>(null);
 
+  // Lista de especialidades
+const SPECIALIDADES = [
+  'Medicina General',
+  'Pediatría',
+  'Ginecología',
+  'Cardiología',
+  'Dermatología',
+];
+
+// Estado para editar/crear horario dentro del modal
+const [medicoHorario, setMedicoHorario] = useState<{ dia: number; inicio: string; fin: string; id?: string }[]>([]);
+
+// Cuando se abre el modal para editar, precargar horario del medico
+useEffect(() => {
+  if (showModal && editingMedico) {
+    // mapear para asegurarnos de ids únicos locales (útil para React keys)
+    const mapped = (editingMedico as any).horario?.map((h: any, idx: number) => ({ ...h, id: String(idx) })) ?? [];
+    setMedicoHorario(mapped);
+  } else if (showModal && !editingMedico) {
+    // nuevo medico -> horario vacío por defecto
+    setMedicoHorario([]);
+  }
+}, [showModal, editingMedico]);
+
+// Helpers para manipular horario
+const addHorarioBlock = () => {
+  setMedicoHorario(prev => [...prev, { dia: 1, inicio: '09:00', fin: '13:00', id: String(Date.now()) }]);
+};
+const removeHorarioBlock = (id?: string) => {
+  setMedicoHorario(prev => prev.filter(h => h.id !== id));
+};
+const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value?: any) => {
+  setMedicoHorario(prev => prev.map(h => h.id === id ? { ...h, [field!]: value } : h));
+};
+
+
   useEffect(() => {
     loadMedicos();
   }, []);
@@ -87,34 +123,33 @@ export function MedicosView() {
   const handleSaveMedico = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
+
     const email = formData.get('email') as string;
     const nombre = formData.get('nombre') as string;
     const especialidad = formData.get('especialidad') as string;
     const telefono = formData.get('telefono') as string;
-    
+
     // Validaciones
     if (!email.includes('@')) {
       toast.error('Email inválido');
       return;
     }
-    
     if (nombre.length < 3 || nombre.length > 100) {
       toast.error('El nombre debe tener entre 3 y 100 caracteres');
       return;
     }
-    
-    if (especialidad.length < 3 || especialidad.length > 100) {
-      toast.error('La especialidad debe tener entre 3 y 100 caracteres');
+    if (!especialidad || especialidad.length < 2) {
+      toast.error('Seleccione una especialidad válida');
       return;
     }
 
-    const data = {
+    const data: any = {
       email,
       nombre,
       especialidad,
       telefono,
       rol: 'MEDICO' as const,
+      horario: medicoHorario.map(h => ({ dia: Number(h.dia), inicio: h.inicio, fin: h.fin })),
     };
 
     try {
@@ -129,10 +164,13 @@ export function MedicosView() {
       }
       setShowModal(false);
       setEditingMedico(null);
+      // limpiar horario local
+      setMedicoHorario([]);
     } catch (error) {
       toast.error('Error al guardar médico');
     }
   };
+
 
   const handleToggleEstado = async (medico: User) => {
     try {
@@ -325,46 +363,110 @@ export function MedicosView() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm mb-1 text-gray-700">Email</label>
-                <input
-                  name="email"
-                  type="email"
-                  defaultValue={editingMedico?.email}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="medico@clinica.cl"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-1 text-gray-700">Email</label>
+                  <input
+                    name="email"
+                    type="email"
+                    defaultValue={editingMedico?.email}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="medico@clinica.cl"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm mb-1 text-gray-700">Teléfono</label>
+                  <input
+                    name="telefono"
+                    type="tel"
+                    defaultValue={(editingMedico as any)?.telefono}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="+56912345678"
+                  />
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm mb-1 text-gray-700">Especialidad</label>
-                <input
+                <select
                   name="especialidad"
-                  type="text"
-                  defaultValue={editingMedico?.especialidad}
+                  defaultValue={editingMedico?.especialidad || SPECIALIDADES[0]}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Medicina General"
-                />
+                >
+                  {SPECIALIDADES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
 
+              {/* Horario dinámico */}
               <div>
-                <label className="block text-sm mb-1 text-gray-700">Teléfono</label>
-                <input
-                  name="telefono"
-                  type="tel"
-                  defaultValue={(editingMedico as any)?.telefono}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="+56912345678"
-                />
-              </div>
+                <label className="block text-sm mb-2 text-gray-700">Horario de trabajo</label>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-900">
-                  <strong>Nota:</strong> Se generará una contraseña temporal que debe ser cambiada en el primer acceso.
-                </p>
+                <div className="space-y-2">
+                  {medicoHorario.length === 0 && (
+                    <div className="text-sm text-gray-500">No hay bloques de horario definidos.</div>
+                  )}
+
+                  {medicoHorario.map((h) => (
+                    <div key={h.id} className="grid grid-cols-3 gap-2 items-center">
+                      <select
+                        value={String(h.dia)}
+                        onChange={(e) => updateHorarioField(h.id, 'dia', Number(e.target.value))}
+                        className="px-2 py-2 border border-gray-300 rounded-md"
+                      >
+                        <option value={1}>Lunes</option>
+                        <option value={2}>Martes</option>
+                        <option value={3}>Miércoles</option>
+                        <option value={4}>Jueves</option>
+                        <option value={5}>Viernes</option>
+                        <option value={6}>Sábado</option>
+                        <option value={0}>Domingo</option>
+                      </select>
+
+                      <input
+                        type="time"
+                        value={h.inicio}
+                        onChange={(e) => updateHorarioField(h.id, 'inicio', e.target.value)}
+                        className="px-2 py-2 border border-gray-300 rounded-md"
+                        required
+                      />
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="time"
+                          value={h.fin}
+                          onChange={(e) => updateHorarioField(h.id, 'fin', e.target.value)}
+                          className="px-2 py-2 border border-gray-300 rounded-md"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeHorarioBlock(h.id)}
+                          className="px-2 py-1 bg-red-50 text-red-700 rounded"
+                          title="Eliminar bloque"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={addHorarioBlock}
+                      className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                    >
+                      + Añadir bloque de horario
+                    </button>
+                    <p className="text-xs text-gray-500 mt-1">Define día y rango (ej: Lunes 09:00–13:00). Puedes añadir varios bloques.</p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
@@ -373,6 +475,7 @@ export function MedicosView() {
                   onClick={() => {
                     setShowModal(false);
                     setEditingMedico(null);
+                    setMedicoHorario([]);
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 >
