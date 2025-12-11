@@ -1,5 +1,13 @@
 export type Rol = "MEDICO" | "SECRETARIA" | "GERENTE";
 
+
+export interface HorarioBloque {
+  // 0 = domingo ... 6 = sábado
+  dia: number;
+  inicio: string; // "HH:MM"
+  fin: string;    // "HH:MM"
+}
+
 export interface User {
   id: string;
   email: string;
@@ -8,6 +16,7 @@ export interface User {
   especialidad?: string;
   telefono?: string;
   activo?: boolean;
+  horario?: HorarioBloque[];
 }
 
 export interface Paciente {

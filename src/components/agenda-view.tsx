@@ -70,6 +70,8 @@ const handleSaveCita = async (e: React.FormEvent<HTMLFormElement>) => {
   const formData = new FormData(e.currentTarget);
   const fecha = formData.get('fecha') as string;
 
+
+
   // Validar fecha: no antes de hoy, no más de 1 año en el futuro
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
@@ -124,7 +126,47 @@ const handleSaveCita = async (e: React.FormEvent<HTMLFormElement>) => {
     return;
   }
 
-  // 2) Validar traslapes con otras citas del mismo médico en la misma fecha (mejorado)
+  // 2. VALIDAR HORARIO LABORAL DEL MÉDICO
+  try {
+    const medicoSeleccionado = medicos.find(m => m.id === medico_id);
+
+    if (!medicoSeleccionado || !medicoSeleccionado.horario) {
+      toast.error('El médico no tiene horarios configurados');
+      return;
+    }
+
+    // Obtener día de la semana (0 domingo ... 6 sábado)
+    const diaSemana = fechaSeleccionada.getDay();
+
+    // Buscar si trabaja ese día
+    const horarioDia = medicoSeleccionado.horario.find(h => h.dia === diaSemana);
+    
+    if (!horarioDia) {
+      toast.error('El médico no trabaja en este día');
+      return;
+    }
+
+    // Convertir rangos laborales
+    const inicioTrabajo = timeToMinutes(horarioDia.inicio);
+    const finTrabajo = timeToMinutes(horarioDia.fin);
+
+    // Validar que la cita esté dentro del horario laboral
+    if (inicioMin < inicioTrabajo || finMin > finTrabajo) {
+      toast.error(
+        `El médico trabaja de ${horarioDia.inicio} a ${horarioDia.fin}. ` +
+        `La cita debe estar dentro de ese rango.`
+      );
+      return;
+    }
+  } catch (err) {
+    console.error('Error validando horario laboral:', err);
+    toast.error('Error validando horario laboral del médico');
+    return;
+  }
+
+
+
+  // 3) Validar traslapes con otras citas del mismo médico en la misma fecha (mejorado)
 try {
   // convierte "HH:MM" -> minutos desde medianoche
   const timeToMinutes = (t: string) => {
