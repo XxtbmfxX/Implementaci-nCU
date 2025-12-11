@@ -21,19 +21,19 @@ function cloneArray<T>(items: T[]): T[] {
   return items.map((item) => ({ ...item }));
 }
 
-export class MockApiClient implements IApiClient {
-  private token: string | null = null;
-  private pacientes: Paciente[] = [];
-  private medicos: User[] = [];
-  private citas: Cita[] = [];
-  private fichas: FichaClinica[] = [];
-  private auditLogs: AuditLog[] = [];
+  export class MockApiClient implements IApiClient {
+    private token: string | null = null;
+    private pacientes: Paciente[] = [];
+    private medicos: User[] = [];
+    private citas: Cita[] = [];
+    private fichas: FichaClinica[] = [];
+    private auditLogs: AuditLog[] = [];
 
   constructor() {
     this.resetData();
   }
 
-  private resetData() {
+  public resetData() {
     this.pacientes = cloneArray(initialPacientes);
     this.medicos = cloneArray(initialMedicos);
     this.citas = createInitialCitas(this.pacientes, this.medicos);
@@ -47,6 +47,7 @@ export class MockApiClient implements IApiClient {
       localStorage.setItem('auth_token', token);
     } else {
       localStorage.removeItem('auth_token');
+      this.resetData();
     }
   }
 

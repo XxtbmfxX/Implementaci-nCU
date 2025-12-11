@@ -15,6 +15,7 @@ export function PacientesView() {
   const [editingPaciente, setEditingPaciente] = useState<Paciente | null>(null);
   const [selectedPaciente, setSelectedPaciente] = useState<Paciente | null>(null);
 
+
   useEffect(() => {
     loadPacientes();
   }, []);

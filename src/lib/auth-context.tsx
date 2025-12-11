@@ -21,28 +21,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
+    setLoading(true);
     try {
       const token = apiClient.getToken();
       if (token) {
         const currentUser = await apiClient.getCurrentUser();
         setUser(currentUser);
+      } else {
+        setUser(null);
       }
     } catch (error) {
       apiClient.setToken(null);
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
-    const { user, token } = await apiClient.login(email, password);
-    apiClient.setToken(token);
-    setUser(user);
+    try {
+      const { user: loginUser, token } = await apiClient.login(email, password);
+      apiClient.setToken(token);
+      const currentUser = await apiClient.getCurrentUser().catch(() => loginUser);
+      setUser(currentUser);
+    } catch (err) {
+      throw err;
+    }
   };
 
   const logout = () => {
     apiClient.setToken(null);
     setUser(null);
+    // Si quieres asegurar 100% limpieza visual:
+    // window.location.reload();
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -50,7 +61,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const permissions: Record<string, string[]> = {
       MEDICO: ['ver_fichas', 'crear_fichas', 'ver_citas_propias', 'ver_pacientes'],
-      SECRETARIA: ['ver_pacientes', 'crear_pacientes', 'actualizar_pacientes', 'ver_agenda', 'gestionar_citas'],
+      SECRETARIA: [
+        'ver_pacientes',
+        'crear_pacientes',
+        'actualizar_pacientes',
+        'ver_agenda',
+        'gestionar_citas'
+      ],
       GERENTE: ['ver_logs', 'gestionar_usuarios', 'ver_reportes', 'configurar_sistema'],
     };
 
