@@ -5,8 +5,10 @@ import { Plus, Search, Edit2, X, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const SOLO_LETRAS_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/;
+const PHONE_CHILE_REGEX = /^\+56[29]\d{8}$/; // +569xxxxxxxx o +562xxxxxxxx
 
-// Helper: formatea el horario de un médico en líneas legibles
+
 function formatHorario(medico: User) {
   // medico.horario puede no existir aún (por eso el any)
   const bloques: any[] = (medico as any).horario ?? [];
@@ -123,23 +125,45 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
   const handleSaveMedico = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-
+    
     const email = formData.get('email') as string;
     const nombre = formData.get('nombre') as string;
     const especialidad = formData.get('especialidad') as string;
     const telefono = formData.get('telefono') as string;
 
-    // Validaciones
-    if (!email.includes('@')) {
+    // Validaciones (consistentes con PacientesView)
+    // Nombre: 2-50 caracteres y solo letras/espacios
+    if (!nombre || nombre.length < 2 || nombre.length > 50) {
+      toast.error('El nombre debe tener entre 2 y 50 caracteres');
+      return;
+    }
+    if (!SOLO_LETRAS_REGEX.test(nombre)) {
+      toast.error('El nombre solo puede contener letras');
+      return;
+    }
+
+    // Email simple
+    if (!email || !email.includes('@')) {
       toast.error('Email inválido');
       return;
     }
-    if (nombre.length < 3 || nombre.length > 100) {
-      toast.error('El nombre debe tener entre 3 y 100 caracteres');
-      return;
-    }
+
+    // Especialidad (si es select ya estará validada, pero la comprobamos)
     if (!especialidad || especialidad.length < 2) {
       toast.error('Seleccione una especialidad válida');
+      return;
+    }
+
+    // Teléfono (mismo formato que pacientes)
+    if (!PHONE_CHILE_REGEX.test(telefono)) {
+      toast.error('Teléfono inválido. Formato: +56912345678 (móvil) o +56212345678 (fijo)');
+      return;
+    }
+
+    // Validar bloques de horario si existen (medicoHorario debe existir como estado)
+    // Cada bloque debe tener inicio < fin
+    if ((medicoHorario ?? []).some((h: any) => !h.inicio || !h.fin || h.inicio >= h.fin)) {
+      toast.error('Cada bloque de horario debe tener hora de inicio y fin, con inicio < fin');
       return;
     }
 
@@ -149,7 +173,7 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
       especialidad,
       telefono,
       rol: 'MEDICO' as const,
-      horario: medicoHorario.map(h => ({ dia: Number(h.dia), inicio: h.inicio, fin: h.fin })),
+      horario: (medicoHorario ?? []).map((h: any) => ({ dia: Number(h.dia), inicio: h.inicio, fin: h.fin })),
     };
 
     try {
@@ -164,12 +188,13 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
       }
       setShowModal(false);
       setEditingMedico(null);
-      // limpiar horario local
       setMedicoHorario([]);
     } catch (error) {
+      console.error(error);
       toast.error('Error al guardar médico');
     }
   };
+
 
 
   const handleToggleEstado = async (medico: User) => {
