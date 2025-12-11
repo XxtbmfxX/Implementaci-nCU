@@ -75,8 +75,7 @@ const handleSaveCita = async (e: React.FormEvent<HTMLFormElement>) => {
   // Validar fecha: no antes de hoy, no más de 1 año en el futuro
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
-  const fechaSeleccionada = new Date(fecha);
-  const unAnoAdelante = new Date();
+  const fechaSeleccionada = new Date(fecha + 'T00:00');  const unAnoAdelante = new Date();
   unAnoAdelante.setFullYear(unAnoAdelante.getFullYear() + 1);
 
   if (fechaSeleccionada < hoy) {
