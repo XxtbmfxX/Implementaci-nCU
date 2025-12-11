@@ -4,6 +4,64 @@ import type { User } from '../lib/api-client';
 import { Plus, Search, Edit2, X, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
+const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+// Helper: formatea el horario de un médico en líneas legibles
+function formatHorario(medico: User) {
+  // medico.horario puede no existir aún (por eso el any)
+  const bloques: any[] = (medico as any).horario ?? [];
+  if (!bloques.length) return null;
+
+  // Agrupar por día
+  const grouped: Record<number, { inicio: string; fin: string }[]> = {};
+  for (const b of bloques) {
+    if (typeof b?.dia !== 'number') continue;
+    grouped[b.dia] = grouped[b.dia] || [];
+    grouped[b.dia].push({ inicio: b.inicio, fin: b.fin });
+  }
+
+  // Construir líneas ordenadas por día (Lun..Dom)
+  const lines: string[] = [];
+  for (let i = 1; i <= 6; i++) { // Lunes (1) .. Sábado (6)
+    if (grouped[i]?.length) {
+      const ranges = grouped[i]
+        .map(r => `${r.inicio}–${r.fin}`)
+        .join(', ');
+      lines.push(`${DAY_NAMES[i]}: ${ranges}`);
+    }
+  }
+  // incluir Domingo si existe (0)
+  if (grouped[0]?.length) {
+    const ranges = grouped[0].map((r: any) => `${r.inicio}–${r.fin}`).join(', ');
+    lines.unshift(`${DAY_NAMES[0]}: ${ranges}`); // al principio
+  }
+
+  // Si no hay líneas (por si los dias eran distintos), mostrar todo en un fallback
+  if (!lines.length) {
+    // ordenar por dia original y mostrar
+    const flat = bloques
+      .slice()
+      .sort((a, b) => (a.dia - b.dia) || a.inicio.localeCompare(b.inicio))
+      .map(b => `${DAY_NAMES[b.dia]} ${b.inicio}–${b.fin}`);
+    return (
+      <div className="text-sm text-gray-600">
+        {flat.map((l, idx) => (<div key={idx}>{l}</div>))}
+      </div>
+    );
+  }
+
+  // Retornar JSX compacto: cada 2-3 items en una línea para no romper la tabla
+  return (
+    <div className="text-sm text-gray-600 space-y-0.5">
+      {lines.map((ln, idx) => (
+        <div key={idx} className="whitespace-nowrap">
+          {ln}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function MedicosView() {
   const [medicos, setMedicos] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,6 +222,7 @@ export function MedicosView() {
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Email</th>
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Especialidad</th>
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Teléfono</th>
+                <th className="px-4 py-3 text-left text-sm text-gray-600">Horario</th>
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Estado</th>
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Acciones</th>
               </tr>
@@ -181,6 +240,11 @@ export function MedicosView() {
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {(medico as any).telefono || '-'}
                     </td>
+
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {formatHorario(medico) ?? <span className="text-gray-400">-</span>}
+                    </td>
+
                     <td className="px-4 py-3">
                       <span
                         className={`text-xs px-2 py-1 rounded ${
