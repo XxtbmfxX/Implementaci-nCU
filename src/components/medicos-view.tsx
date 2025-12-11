@@ -76,8 +76,6 @@ const SPECIALIDADES = [
   'Medicina General',
   'Pediatría',
   'Ginecología',
-  'Cardiología',
-  'Dermatología',
 ];
 
 // Estado para editar/crear horario dentro del modal
