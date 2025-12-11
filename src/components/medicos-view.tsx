@@ -492,7 +492,6 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                           Eliminar
                         </button>
                       </div>
-                    </div>
                   ))}
 
                   <div className="pt-2">
