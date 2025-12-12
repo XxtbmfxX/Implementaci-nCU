@@ -5,7 +5,7 @@ import { Plus, Search, Edit2, X, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const SOLO_LETRAS_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/;
+const SOLO_LETRAS_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ .]+$/;
 const PHONE_CHILE_REGEX = /^\+56[29]\d{8}$/; // +569xxxxxxxx o +562xxxxxxxx
 
 
