@@ -134,8 +134,20 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
   const handleSaveMedico = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
+
     const email = formData.get('email') as string;
+
+    // Evitar correos duplicados
+    const emailUsado = medicos.some(m =>
+      m.email.toLowerCase() === email.toLowerCase() &&
+      (!editingMedico || m.id !== editingMedico.id) // permite el mismo email al editar
+    );
+
+    if (emailUsado) {
+      toast.error('El correo ya está en uso por otro médico');
+      return;
+    }
+
     const nombre = formData.get('nombre') as string;
     const especialidad = formData.get('especialidad') as string;
     const telefono = formData.get('telefono') as string;
