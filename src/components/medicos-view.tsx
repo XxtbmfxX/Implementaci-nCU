@@ -301,7 +301,9 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Teléfono</th>
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Horario</th>
                 <th className="px-4 py-3 text-left text-sm text-gray-600">Estado</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-600">Acciones</th>
+                {hasPermission('gestionar_usuarios') && (
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">Acciones</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -321,47 +323,56 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {formatHorario(medico) ?? <span className="text-gray-400">-</span>}
                     </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-
-                    {/* Botón Editar (solo GERENTE) */}
-                    {hasPermission('gestionar_usuarios') && (
-                      <button
-                        onClick={() => {
-                          setEditingMedico(medico);
-                          setShowModal(true);
-                        }}
-                        className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                    )}
-
-                    {/* Activar / Desactivar (solo GERENTE) */}
-                    {hasPermission('gestionar_usuarios') && (
-                      <button
-                        onClick={() => {
-                          setMedicoToToggle(medico);
-                          setConfirmModalVisible(true);
-                        }}
-                        className={`p-1 rounded ${
-                          activo
-                            ? 'text-red-600 hover:bg-red-50'
-                            : 'text-green-600 hover:bg-green-50'
+                    <td className="px-4 py-3">
+                      <span
+                        className={`text-xs px-2 py-1 rounded ${
+                          activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}
-                        title={activo ? 'Desactivar' : 'Activar'}
                       >
-                        {activo ? (
-                          <UserX className="w-4 h-4" />
-                        ) : (
-                          <UserCheck className="w-4 h-4" />
-                        )}
-                      </button>
-                    )}
+                        {activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
 
-                  </div>
-                </td>
+                        {/* Botón Editar (solo GERENTE) */}
+                        {hasPermission('gestionar_usuarios') && (
+                          <button
+                            onClick={() => {
+                              setEditingMedico(medico);
+                              setShowModal(true);
+                            }}
+                            className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                            title="Editar"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        {/* Activar / Desactivar (solo GERENTE) */}
+                        {hasPermission('gestionar_usuarios') && (
+                          <button
+                            onClick={() => {
+                              setMedicoToToggle(medico);
+                              setConfirmModalVisible(true);
+                            }}
+                            className={`p-1 rounded ${
+                              activo
+                                ? 'text-red-600 hover:bg-red-50'
+                                : 'text-green-600 hover:bg-green-50'
+                            }`}
+                            title={activo ? 'Desactivar' : 'Activar'}
+                          >
+                            {activo ? (
+                              <UserX className="w-4 h-4" />
+                            ) : (
+                              <UserCheck className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
