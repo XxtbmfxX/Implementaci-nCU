@@ -70,6 +70,8 @@ export function MedicosView() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingMedico, setEditingMedico] = useState<User | null>(null);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [medicoToToggle, setMedicoToToggle] = useState<User | null>(null);
 
   // Lista de especialidades
 const SPECIALIDADES = [
@@ -330,7 +332,10 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleToggleEstado(medico)}
+                          onClick={() => {
+                            setMedicoToToggle(medico);
+                            setConfirmModalVisible(true);
+                          }}
                           className={`p-1 rounded ${
                             activo
                               ? 'text-red-600 hover:bg-red-50'
@@ -528,6 +533,48 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
           </div>
         </div>
       )}
+        {/* Modal Confirmar Activar/Desactivar */}
+        {confirmModalVisible && medicoToToggle && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+            <div className="bg-white rounded-lg max-w-sm w-full">
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-gray-900 text-lg">
+                  {((medicoToToggle as any).activo !== false) ? 'Desactivar Médico' : 'Activar Médico'}
+                </h3>
+                <p className="text-sm text-gray-600 mt-2">
+                  ¿Estás seguro que quieres {((medicoToToggle as any).activo !== false) ? 'desactivar' : 'activar'} a <strong>{medicoToToggle.nombre}</strong>?
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 p-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmModalVisible(false);
+                    setMedicoToToggle(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    // Llamamos a la función existente que hace el update
+                    if (medicoToToggle) {
+                      await handleToggleEstado(medicoToToggle);
+                    }
+                    setConfirmModalVisible(false);
+                    setMedicoToToggle(null);
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                >
+                  {((medicoToToggle as any).activo !== false) ? 'Desactivar' : 'Activar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
