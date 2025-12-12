@@ -48,6 +48,7 @@ export interface Cita {
   hora_fin: string;
   tipo_consulta: string;
   estado: CitaEstado;
+  estado_anterior?: CitaEstado;
   motivo_categoria?: string;
   paciente?: Paciente;
   medico?: User;

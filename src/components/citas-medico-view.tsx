@@ -32,14 +32,35 @@ export function CitasMedicoView() {
   };
 
   const handleIniciarAtencion = async (citaId: string) => {
+    const cita = citas.find((c) => c.id === citaId);
+    const hoy = new Date().toISOString().split('T')[0];
+
+    if (!cita) return;
+    if (cita.fecha !== hoy) {
+      toast.error('Solo puedes iniciar atenciones del día de hoy');
+      return;
+    }
+    if (cita.estado !== 'CONFIRMADA') {
+      toast.error('La atención solo puede iniciarse desde una cita confirmada');
+      return;
+    }
+    if (cita.medico?.activo === false) {
+      toast.error('No se puede iniciar: el médico está inactivo');
+      return;
+    }
+    if (cita.paciente?.activo === false) {
+      toast.error('No se puede iniciar: el paciente está inactivo');
+      return;
+    }
+
     try {
       await apiClient.updateCita(citaId, { estado: 'EN_ATENCION' });
-      setCitas(prev => prev.map(c => 
-        c.id === citaId ? { ...c, estado: 'EN_ATENCION' as const } : c
-      ));
+      setCitas((prev) =>
+        prev.map((c) => (c.id === citaId ? { ...c, estado: 'EN_ATENCION' as const } : c)),
+      );
       toast.success('Atención iniciada');
-    } catch (error) {
-      toast.error('Error al iniciar atención');
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al iniciar atención');
     }
   };
 
@@ -50,18 +71,34 @@ export function CitasMedicoView() {
 
   const handleCompletarAtencion = async (cita: Cita) => {
     const apuntesCita = apuntes[cita.id];
-    
+    const hoy = new Date().toISOString().split('T')[0];
+
+    if (cita.fecha !== hoy) {
+      toast.error('Solo puedes completar atenciones del día de hoy');
+      return;
+    }
+    if (cita.estado !== 'EN_ATENCION') {
+      toast.error('Solo puedes completar citas en atención');
+      return;
+    }
     if (!apuntesCita || apuntesCita.trim().length === 0) {
       toast.error('Debe agregar apuntes antes de completar la atención');
       return;
     }
+    if (cita.medico?.activo === false) {
+      toast.error('No se puede completar: el médico está inactivo');
+      return;
+    }
+    if (cita.paciente?.activo === false) {
+      toast.error('No se puede completar: el paciente está inactivo');
+      return;
+    }
 
     try {
-      // Crear ficha clínica con los apuntes
       await apiClient.createFicha({
         paciente_id: cita.paciente_id,
         medico_id: user?.id || '',
-        fecha: new Date().toISOString().split('T')[0],
+        fecha: hoy,
         anamnesis: apuntesCita,
         examen_fisico: '',
         diagnostico: '',
@@ -69,23 +106,22 @@ export function CitasMedicoView() {
         observaciones: 'Apuntes registrados durante la atención',
       });
 
-      // Actualizar estado de la cita
       await apiClient.updateCita(cita.id, { estado: 'COMPLETADA' });
-      
-      setCitas(prev => prev.map(c => 
-        c.id === cita.id ? { ...c, estado: 'COMPLETADA' as const } : c
-      ));
-      
-      setApuntes(prev => {
+
+      setCitas((prev) =>
+        prev.map((c) => (c.id === cita.id ? { ...c, estado: 'COMPLETADA' as const } : c)),
+      );
+
+      setApuntes((prev) => {
         const newApuntes = { ...prev };
         delete newApuntes[cita.id];
         return newApuntes;
       });
-      
+
       setSelectedCita(null);
       toast.success('Atención completada y ficha clínica creada');
-    } catch (error) {
-      toast.error('Error al completar atención');
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al completar atención');
     }
   };
 

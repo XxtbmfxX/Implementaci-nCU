@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiClient } from '../lib/api-client';
 import type { Cita, Paciente, User } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
-import { Plus, Calendar as CalendarIcon, Clock, User, X, Check, Search } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Clock, User, X, Check, Search, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
 type PeriodoVista = 'dia' | 'semana' | 'mes';
@@ -263,6 +263,90 @@ try {
     '17:00', '17:30', '18:00', '18:30'
   ];
 
+  const handleConfirmarCita = async (id: string) => {
+    try {
+      const updated = await apiClient.updateCita(id, { estado: 'CONFIRMADA' });
+      setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+      toast.success('Cita confirmada');
+    } catch (error) {
+      console.error('Error al confirmar cita:', error);
+      toast.error('No se pudo confirmar la cita');
+    }
+  };
+
+  const handleCancelarCita = async (id: string) => {
+    try {
+      const cita = citas.find((c) => c.id === id);
+      if (!cita) return;
+      const updated = await apiClient.updateCita(id, { estado: 'CANCELADA', estado_anterior: cita.estado });
+      setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+      toast.success('Cita cancelada');
+    } catch (error) {
+      console.error('Error al cancelar cita:', error);
+      toast.error('No se pudo cancelar la cita');
+    }
+  };
+
+  const handleRestaurarCita = async (id: string) => {
+    try {
+      const cita = citas.find((c) => c.id === id);
+      if (!cita || !cita.estado_anterior) return;
+
+      const medico = medicos.find((m) => m.id === cita.medico_id);
+      const paciente = pacientes.find((p) => p.id === cita.paciente_id);
+
+      if (medico && medico.activo === false) {
+        toast.error('No se puede restaurar: el médico está inactivo');
+        return;
+      }
+      if (paciente && paciente.activo === false) {
+        toast.error('No se puede restaurar: el paciente está inactivo');
+        return;
+      }
+
+      const hoy = new Date().toISOString().split('T')[0];
+      let estadoDestino = cita.estado_anterior;
+
+      // Evitar restaurar EN_ATENCION en días distintos
+      if (estadoDestino === 'EN_ATENCION' && cita.fecha !== hoy) {
+        estadoDestino = 'CONFIRMADA';
+        toast.info('La cita se restaurará como CONFIRMADA por ser de otra fecha');
+      }
+
+      // Validar traslapes antes de restaurar
+      const timeToMinutes = (t: string) => {
+        const [hh, mm] = t.split(':').map(Number);
+        return hh * 60 + mm;
+      };
+
+      const inicioMin = timeToMinutes(cita.hora_inicio);
+      const finMin = timeToMinutes(cita.hora_fin);
+
+      const citasResp = await apiClient.getCitas({ medico_id: cita.medico_id, fecha: cita.fecha });
+      const citasDelMedico: Cita[] = citasResp.data || [];
+      const citasActivas = citasDelMedico.filter(c => c.estado !== 'CANCELADA' && c.estado !== 'COMPLETADA');
+      const otrasCitas = citasActivas.filter(c => c.id !== id);
+
+      const existeTraslape = otrasCitas.some((c) => {
+        const cInicio = timeToMinutes(c.hora_inicio);
+        const cFin = timeToMinutes(c.hora_fin);
+        return (inicioMin < cFin) && (finMin > cInicio);
+      });
+
+      if (existeTraslape) {
+        toast.error('No se puede restaurar la cita: hay conflicto de horario');
+        return;
+      }
+
+      const updated = await apiClient.updateCita(id, { estado: estadoDestino, estado_anterior: undefined });
+      setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+      toast.success('Cita restaurada');
+    } catch (error) {
+      console.error('Error al restaurar cita:', error);
+      toast.error('No se pudo restaurar la cita');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -422,6 +506,15 @@ try {
                         title="Confirmar"
                       >
                         <Check className="w-4 h-4" />
+                      </button>
+                    )}
+                    {cita.estado === 'CANCELADA' && cita.estado_anterior && (
+                      <button
+                        onClick={() => handleRestaurarCita(cita.id)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
+                        title="Restaurar"
+                      >
+                        <RotateCcw className="w-4 h-4" />
                       </button>
                     )}
                     {cita.estado !== 'CANCELADA' && cita.estado !== 'COMPLETADA' && (

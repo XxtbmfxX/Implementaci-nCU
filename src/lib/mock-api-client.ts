@@ -164,8 +164,54 @@ function cloneArray<T>(items: T[]): T[] {
       ? this.medicos.find((m) => m.id === data.medico_id)
       : current.medico;
 
-    const updated: Cita = { ...current, ...data, paciente, medico } as Cita;
+    const nextEstado = data.estado ?? current.estado;
+
+    // Validaciones de flujo de estados
+    if (nextEstado === 'COMPLETADA' && current.estado !== 'EN_ATENCION') {
+      throw new Error('Solo se puede completar una cita que está EN_ATENCION');
+    }
+    if (nextEstado === 'EN_ATENCION' && current.estado !== 'CONFIRMADA') {
+      throw new Error('Solo se puede iniciar atención desde una cita CONFIRMADA');
+    }
+    if (nextEstado === 'CANCELADA' && current.estado === 'COMPLETADA') {
+      throw new Error('No se puede cancelar una cita completada');
+    }
+
+    // Validar entidad activa para estados que implican atención
+    if (['CONFIRMADA', 'EN_ATENCION', 'COMPLETADA'].includes(nextEstado)) {
+      if (medico && medico.activo === false) {
+        throw new Error('El médico está inactivo');
+      }
+      if (paciente && paciente.activo === false) {
+        throw new Error('El paciente está inactivo');
+      }
+    }
+
+    // Guardar estado anterior al cancelar si no viene informado
+    const estado_anterior =
+      nextEstado === 'CANCELADA' ? (data.estado_anterior ?? current.estado) : undefined;
+
+    const updated: Cita = {
+      ...current,
+      ...data,
+      estado: nextEstado,
+      estado_anterior,
+      paciente,
+      medico,
+    } as Cita;
     this.citas[idx] = updated;
+
+    // Registrar en auditoría de forma simple
+    this.auditLogs.push({
+      id: String(Date.now()),
+      usuario_id: 'mock-user',
+      accion: 'updateCita',
+      entidad: 'cita',
+      entidad_id: id,
+      fecha: new Date().toISOString(),
+      detalles: JSON.stringify({ de: current.estado, a: nextEstado }),
+    });
+
     return updated;
   }
 
