@@ -3,6 +3,7 @@ import { apiClient } from '../lib/api-client';
 import type { User } from '../lib/api-client';
 import { Plus, Search, Edit2, X, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
+import { useAuth } from '../lib/auth-context';
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const SOLO_LETRAS_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ .]+$/;
@@ -65,6 +66,7 @@ function formatHorario(medico: User) {
 }
 
 export function MedicosView() {
+  const { hasPermission } = useAuth();
   const [medicos, setMedicos] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,6 +75,13 @@ export function MedicosView() {
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [medicoToToggle, setMedicoToToggle] = useState<User | null>(null);
 
+if (!hasPermission('ver_medicos')) {
+  return (
+    <div className="p-6 text-center text-gray-700">
+      No tienes permisos para ver esta sección.
+    </div>
+  );
+}
   // Lista de especialidades
 const SPECIALIDADES = [
   'Medicina General',
@@ -231,17 +240,22 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
           <h2 className="text-gray-900">Gestión de Médicos</h2>
           <p className="text-gray-600 mt-1">Administre los médicos del centro de salud</p>
         </div>
-        <button
-          onClick={() => {
-            setEditingMedico(null);
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo Médico
-        </button>
+
+        {/* Botón solo visible para GERENTE */}
+        {hasPermission('gestionar_usuarios') && (
+          <button
+            onClick={() => {
+              setEditingMedico(null);
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo Médico
+          </button>
+        )}
       </div>
+
 
       {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -307,50 +321,47 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {formatHorario(medico) ?? <span className="text-gray-400">-</span>}
                     </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
 
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-xs px-2 py-1 rounded ${
-                          activo
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
+                    {/* Botón Editar (solo GERENTE) */}
+                    {hasPermission('gestionar_usuarios') && (
+                      <button
+                        onClick={() => {
+                          setEditingMedico(medico);
+                          setShowModal(true);
+                        }}
+                        className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                        title="Editar"
                       >
-                        {activo ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setEditingMedico(medico);
-                            setShowModal(true);
-                          }}
-                          className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                          title="Editar"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setMedicoToToggle(medico);
-                            setConfirmModalVisible(true);
-                          }}
-                          className={`p-1 rounded ${
-                            activo
-                              ? 'text-red-600 hover:bg-red-50'
-                              : 'text-green-600 hover:bg-green-50'
-                          }`}
-                          title={activo ? 'Desactivar' : 'Activar'}
-                        >
-                          {activo ? (
-                            <UserX className="w-4 h-4" />
-                          ) : (
-                            <UserCheck className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    {/* Activar / Desactivar (solo GERENTE) */}
+                    {hasPermission('gestionar_usuarios') && (
+                      <button
+                        onClick={() => {
+                          setMedicoToToggle(medico);
+                          setConfirmModalVisible(true);
+                        }}
+                        className={`p-1 rounded ${
+                          activo
+                            ? 'text-red-600 hover:bg-red-50'
+                            : 'text-green-600 hover:bg-green-50'
+                        }`}
+                        title={activo ? 'Desactivar' : 'Activar'}
+                      >
+                        {activo ? (
+                          <UserX className="w-4 h-4" />
+                        ) : (
+                          <UserCheck className="w-4 h-4" />
+                        )}
+                      </button>
+                    )}
+
+                  </div>
+                </td>
                   </tr>
                 );
               })}
