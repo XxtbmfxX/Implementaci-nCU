@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiClient } from '../lib/api-client';
 import type { Cita, Paciente, User } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
-import { Plus, Calendar as CalendarIcon, Clock, User, X, Check } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Clock, User, X, Check, Search } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
 type PeriodoVista = 'dia' | 'semana' | 'mes';
@@ -16,6 +16,7 @@ export function AgendaView() {
   const [periodo, setPeriodo] = useState<PeriodoVista>('dia');
   const [showModal, setShowModal] = useState(false);
   const [selectedCita, setSelectedCita] = useState<Cita | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadData();
@@ -270,7 +271,16 @@ try {
     );
   }
 
-  const citasOrdenadas = [...citas].sort((a, b) => 
+  const term = searchTerm.trim().toLowerCase();
+  const citasFiltradas = citas.filter((cita) => {
+    if (!term) return true;
+    const nombre = cita.paciente?.nombre?.toLowerCase() || '';
+    const apellido = cita.paciente?.apellido?.toLowerCase() || '';
+    const rut = cita.paciente?.rut || '';
+    return nombre.includes(term) || apellido.includes(term) || rut.includes(term);
+  });
+
+  const citasOrdenadas = [...citasFiltradas].sort((a, b) => 
     a.hora_inicio.localeCompare(b.hora_inicio)
   );
 
@@ -339,18 +349,32 @@ try {
         </div>
       </div>
 
+      {/* Buscador */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Buscar por nombre o RUT del paciente..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       {/* Lista de citas */}
       <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
         {citasOrdenadas.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
-            No hay citas programadas para este período
+            {term ? 'Sin resultados para la búsqueda' : 'No hay citas programadas para este período'}
           </div>
         ) : (
           citasOrdenadas.map((cita) => (
             <div key={cita.id} className="p-4 hover:bg-gray-50">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
+                  <div
+                    className={`flex items-center gap-3 mb-2 ${term ? 'bg-yellow-50 border border-yellow-200 rounded-md px-2 py-1' : ''}`}
+                  >
                     <div className="flex items-center gap-2 text-sm text-gray-900">
                       <CalendarIcon className="w-4 h-4 text-gray-400" />
                       <span>{new Date(cita.fecha + 'T00:00').toLocaleDateString('es-CL')}</span>
