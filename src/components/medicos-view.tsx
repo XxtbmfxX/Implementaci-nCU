@@ -6,6 +6,7 @@ import { toast } from 'sonner@2.0.3';
 import { useAuth } from '../lib/auth-context';
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
 const SOLO_LETRAS_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ .]+$/;
 const PHONE_CHILE_REGEX = /^\+56[29]\d{8}$/; // +569xxxxxxxx o +562xxxxxxxx
 
@@ -89,18 +90,28 @@ const SPECIALIDADES = [
   'Ginecología',
 ];
 
+// Horario por defecto: Lun-Vie 08:00-17:00
+const DEFAULT_HORARIO = [1,2,3,4,5].map((d, i) => ({
+  dia: d,
+  inicio: '08:00',
+  fin: '17:00',
+  id: `def-${Date.now()}-${i}`
+}));
+
 // Estado para editar/crear horario dentro del modal
 const [medicoHorario, setMedicoHorario] = useState<{ dia: number; inicio: string; fin: string; id?: string }[]>([]);
 
 // Cuando se abre el modal para editar, precargar horario del medico
 useEffect(() => {
-  if (showModal && editingMedico) {
-    // mapear para asegurarnos de ids únicos locales (útil para React keys)
-    const mapped = (editingMedico as any).horario?.map((h: any, idx: number) => ({ ...h, id: String(idx) })) ?? [];
+  if (!showModal) return;
+
+  if (editingMedico) {
+    // editar: usar horario existente (si lo hay), generando ids locales únicos
+    const mapped = (editingMedico as any).horario?.map((h: any, idx: number) => ({ ...h, id: `h-${idx}-${Date.now()}` })) ?? [];
     setMedicoHorario(mapped);
-  } else if (showModal && !editingMedico) {
-    // nuevo medico -> horario vacío por defecto
-    setMedicoHorario([]);
+  } else {
+    // nuevo médico: precargar horario por defecto (Lun-Vie 08:00-17:00)
+    setMedicoHorario(DEFAULT_HORARIO.map(h => ({ ...h })));
   }
 }, [showModal, editingMedico]);
 
@@ -183,6 +194,18 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
 
     // Validar bloques de horario si existen (medicoHorario debe existir como estado)
     // Cada bloque debe tener inicio < fin
+    if ((medicoHorario ?? []).some((h: any) => !h.inicio || !h.fin || h.inicio >= h.fin)) {
+      toast.error('Cada bloque de horario debe tener hora de inicio y fin, con inicio < fin');
+      return;
+    }
+
+    // Requerir al menos un bloque de horario
+    if (!(medicoHorario && medicoHorario.length > 0)) {
+      toast.error('Debe definir al menos un bloque de horario para el médico (por ejemplo Lun–Vie 08:00–17:00)');
+      return;
+    }
+
+    // Validar bloques de horario: cada bloque debe tener inicio < fin
     if ((medicoHorario ?? []).some((h: any) => !h.inicio || !h.fin || h.inicio >= h.fin)) {
       toast.error('Cada bloque de horario debe tener hora de inicio y fin, con inicio < fin');
       return;
