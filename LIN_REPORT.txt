@@ -1,0 +1,56 @@
+Here’s the lint report annotated with likely fixes:
+
+Global
+
+eslint.config.js warning about module type: add "type": "module" to package.json or convert config to CJS.
+agenda-view.tsx
+
+L23 useEffect deps: add loadData to deps or inline the logic to avoid stale closures.
+L48, L236 any: type the items from agenda (e.g., Cita, Paciente, etc.).
+L60 error unused: remove variable or log/toast it.
+auditoria-view.tsx
+
+L20 error unused: remove or surface via toast.
+citas-medico-view.tsx
+
+L17 useEffect deps: include loadCitasDelDia or refactor.
+L27 unused error: remove or handle.
+L62, L123 any: use domain types (likely Cita, Paciente, etc.).
+dashboard-view.tsx
+
+L8 any: type dashboard stats, probably DashboardStats.
+L19 unused error: remove/handle.
+login-form.tsx
+
+L19 unused err: remove or show toast.
+medicos-view.tsx
+
+Many any: replace with domain types (Medico, Horario, form payload, etc.).
+Unused error at L116/L206: remove or handle.
+pacientes-view.tsx
+
+Unused error at L27/L148/L448: remove or handle.
+any at L35/L130/L437: use Paciente, FichaClinica, or typed payloads.
+L442 useEffect deps: include loadFichas or refactor.
+badge.tsx, button.tsx, form.tsx, navigation-menu.tsx, toggle.tsx, sidebar.tsx, lib/auth-context.tsx
+
+react-refresh/only-export-components: move shared constants/helpers to a separate module or co-locate inside the component file that consumes them so the file only exports components.
+sidebar.tsx L612 impure Math.random: replace with a deterministic value (static width, prop-driven, or seeded from stable input) instead of random on render.
+chart.tsx
+
+L206 any args: type chart data/formatter params.
+input-otp.tsx
+
+L48 any: type the prop/callback parameter (string, number, etc.).
+auth-context.tsx
+
+L33 unused error: remove or handle.
+L42 no-useless-catch: drop the try/catch or handle differently.
+L84 fast-refresh: same fix as above (only export components).
+mock-api-client.ts
+
+L240 _params and L245 _rol unused: remove underscores or use the values.
+auth.ts
+
+L31/L46 _pw assigned but unused: remove or use in comparison.
+If you want, I can start applying fixes—likely starting with unused vars/any replacements using the domain types in types.ts, then moving shared constants out of the UI component files, and addressing the random width in sidebar.tsx.
