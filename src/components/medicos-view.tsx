@@ -66,7 +66,7 @@ function formatHorario(medico: User) {
 }
 
 export function MedicosView() {
-  const { hasPermission } = useAuth();
+  const {user, hasPermission } = useAuth();
   const [medicos, setMedicos] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
