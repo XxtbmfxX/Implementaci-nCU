@@ -30,6 +30,19 @@ export function PacientesView() {
       setLoading(false);
     }
   };
+function normalizarRut(input: string): string {
+  if (!input) return '';
+  // quitar espacios, puntos y guiones, dejar mayúsculas
+  const raw = String(input).trim().replace(/\s+/g, '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+  // si no queda al menos 2 chars, devolver vacío
+  if (raw.length < 2) return '';
+  // último caracter = DV
+  const dv = raw.slice(-1);
+  const num = raw.slice(0, -1);
+  // prevenir que num no sea numérico
+  if (!/^\d+$/.test(num)) return '';
+  return `${num}-${dv}`;
+}
 
 const isPacienteActivo = (p: Paciente) => {
   const s = (p as any).estado;
@@ -66,7 +79,24 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    const rut = formData.get('rut') as string;
+
+    const rutRaw = (formData.get('rut') as string) ?? '';
+    const rut = normalizarRut(rutRaw);
+
+    if (!rut) {
+      toast.error('Ingrese un RUT válido');
+      return;
+    }
+    // Validar RUT duplicado
+    const rutDuplicado = pacientes.some(p =>
+      normalizarRut(p.rut) === rut &&
+      p.id !== editingPaciente?.id
+    );
+
+    if (rutDuplicado) {
+      toast.error('Ya existe un paciente registrado con este RUT');
+      return;
+    }
     const fechaNacimiento = formData.get('fecha_nacimiento') as string;
     const telefono = formData.get('telefono') as string;
     const nombre = formData.get('nombre') as string;
@@ -74,9 +104,10 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
     const direccion = formData.get('direccion') as string;
     const soloLetras = /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/;
     
+    
     // Validar RUT
     if (!validateRut(rut)) {
-      toast.error('RUT inválido. Por favor ingrese un RUT válido (ej: 12345678-9)');
+      toast.error('RUT inválido. Por favor ingrese un RUT válido');
       return;
     }
     
@@ -129,7 +160,7 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
 
     const data = Object.fromEntries(formData) as any;
     data.activo = true;
-    data.rut = formatRut(rut); // Formatear el RUT
+    data.rut = rut; // Formatear el RUT
 
     try {
       if (editingPaciente) {

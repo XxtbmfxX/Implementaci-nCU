@@ -60,15 +60,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return false;
 
     const permissions: Record<string, string[]> = {
-      MEDICO: ['ver_fichas', 'crear_fichas', 'ver_citas_propias', 'ver_pacientes'],
+      MEDICO:[
+        'ver_fichas',
+        'crear_fichas',
+        'ver_citas_propias',
+        'ver_pacientes'
+      ],
       SECRETARIA: [
         'ver_pacientes',
         'crear_pacientes',
         'actualizar_pacientes',
         'ver_agenda',
-        'gestionar_citas'
+        'gestionar_citas',
+        'ver_medicos' 
       ],
-      GERENTE: ['ver_logs', 'gestionar_usuarios', 'ver_reportes', 'configurar_sistema'],
+      GERENTE: [
+        'ver_logs',
+        'gestionar_usuarios',
+        'ver_reportes',
+        'configurar_sistema',
+        'ver_medicos' 
+      ],
     };
 
     return permissions[user.rol]?.includes(permission) || false;

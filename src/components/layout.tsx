@@ -34,6 +34,7 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
     ...(user.rol === 'SECRETARIA' ? [
       { name: 'Agenda', icon: Calendar, view: 'agenda', roles: ['SECRETARIA'] },
       { name: 'Pacientes', icon: Users, view: 'pacientes', roles: ['SECRETARIA'] },
+      { name: 'Médicos', icon: Stethoscope, view: 'medicos', roles: ['SECRETARIA'] },
     ] : []),
     ...(user.rol === 'GERENTE' ? [
       { name: 'Dashboard', icon: BarChart3, view: 'dashboard', roles: ['GERENTE'] },
