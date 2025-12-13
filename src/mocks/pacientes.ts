@@ -37,4 +37,17 @@ export const initialPacientes: Paciente[] = [
     prevision: 'FONASA',
     activo: true,
   },
+  {
+    id: '4',
+    rut: '34567890-1',
+    nombre: 'Catalina',
+    apellido: 'Martinez',
+    fecha_nacimiento: '1998-11-20',
+    telefono: '+56934567432',
+    email: 'catalina@email.com',
+    direccion: 'Pasaje Oviedo 209',
+    prevision: 'FONASA',
+    activo: true,
+  },
+
 ];
