@@ -1,28 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useLoaderData } from 'react-router';
 import { apiClient } from '../lib/api-client';
 import type { AuditLog } from '../lib/api-client';
 import { Shield, Search, Calendar, User, FileText } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
+export async function auditoriaLoader() {
+  const response = await apiClient.getAuditLogs({ page: 1, limit: 50 });
+  return { logs: response.data };
+}
+
 export function AuditoriaView() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { logs } = useLoaderData() as { logs: AuditLog[] };
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    loadAuditLogs();
-  }, []);
-
-  const loadAuditLogs = async () => {
-    try {
-      const response = await apiClient.getAuditLogs({ page: 1, limit: 50 });
-      setLogs(response.data);
-    } catch (error) {
-      toast.error('Error al cargar logs de auditoría');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredLogs = logs.filter(log =>
     log.accion.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -41,14 +31,6 @@ export function AuditoriaView() {
     };
     return colors[accion as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Cargando logs de auditoría...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

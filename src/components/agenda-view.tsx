@@ -1,26 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useLoaderData, useRevalidator } from 'react-router';
 import { apiClient } from '../lib/api-client';
 import type { Cita, Paciente, User } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
-import { Plus, Calendar as CalendarIcon, Clock, User, X, Check, Search, RotateCcw, Edit2 } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Clock, User as UserIcon, X, Check, Search, RotateCcw, Edit2 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
 type PeriodoVista = 'dia' | 'semana' | 'mes';
 
+export async function agendaLoader() {
+  const [citasRes, pacientesRes, medicosRes] = await Promise.all([
+    apiClient.getCitas({}),
+    apiClient.getPacientes(),
+    (apiClient as any).getMedicos(),
+  ]);
+
+  return {
+    citas: citasRes.data,
+    pacientes: pacientesRes.data,
+    medicos: medicosRes.data || medicosRes || [],
+  };
+}
+
 export function AgendaView() {
   const { user } = useAuth();
-  const [citas, setCitas] = useState<Cita[]>([]);
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [medicos, setMedicos] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { citas: initialCitas, pacientes, medicos } = useLoaderData() as { citas: Cita[], pacientes: Paciente[], medicos: User[] };
+  const revalidator = useRevalidator();
+  
   const [periodo, setPeriodo] = useState<PeriodoVista>('dia');
   const [showModal, setShowModal] = useState(false);
   const [selectedCita, setSelectedCita] = useState<Cita | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    loadData();
-  }, [periodo]);
 
   const getDateRange = () => {
     const hoy = new Date();
@@ -40,32 +50,14 @@ export function AgendaView() {
     }
   };
 
-  const loadData = async () => {
-    try {
-      const citasParams =
-        user?.rol === 'MEDICO'
-          ? { medico_id: user.id }
-          : {};
-      const [citasRes, pacientesRes, medicosRes] = await Promise.all([
-        apiClient.getCitas(citasParams),
-        apiClient.getPacientes(),
-        (apiClient as any).getMedicos(),
-      ]);
-      
-      // Filtrar citas según el período seleccionado
-      const { inicio, fin } = getDateRange();
-      const citasFiltradas = citasRes.data.filter((cita: Cita) => {
-        return cita.fecha >= inicio && cita.fecha <= fin;
-      });
-      
-      setCitas(citasFiltradas);
-      setPacientes(pacientesRes.data);
-      setMedicos(medicosRes.data || medicosRes || []);
-    } catch (error) {
-      toast.error('Error al cargar datos');
-    } finally {
-      setLoading(false);
-    }
+  // Filtrar citas según el período seleccionado
+  const { inicio, fin } = getDateRange();
+  const citas = initialCitas.filter((cita: Cita) => {
+    return cita.fecha >= inicio && cita.fecha <= fin;
+  });
+
+  const refreshData = () => {
+    revalidator.revalidate();
   };
 
 //Validacion horario citas
@@ -242,7 +234,7 @@ try {
     }
     setShowModal(false);
     setSelectedCita(null);
-    loadData();
+    refreshData();
   } catch (error) {
     console.error('Error al guardar cita:', error);
     toast.error('Error al guardar cita');
@@ -269,8 +261,8 @@ try {
 
   const handleConfirmarCita = async (id: string) => {
     try {
-      const updated = await apiClient.updateCita(id, { estado: 'CONFIRMADA' });
-      setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+      await apiClient.updateCita(id, { estado: 'CONFIRMADA' });
+      refreshData();
       toast.success('Cita confirmada');
     } catch (error) {
       console.error('Error al confirmar cita:', error);
@@ -282,8 +274,8 @@ try {
     try {
       const cita = citas.find((c) => c.id === id);
       if (!cita) return;
-      const updated = await apiClient.updateCita(id, { estado: 'CANCELADA', estado_anterior: cita.estado });
-      setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+      await apiClient.updateCita(id, { estado: 'CANCELADA', estado_anterior: cita.estado });
+      refreshData();
       toast.success('Cita cancelada');
     } catch (error) {
       console.error('Error al cancelar cita:', error);
@@ -343,21 +335,13 @@ try {
       }
 
       const updated = await apiClient.updateCita(id, { estado: estadoDestino, estado_anterior: undefined });
-      setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+      refreshData();
       toast.success('Cita restaurada');
     } catch (error) {
       console.error('Error al restaurar cita:', error);
       toast.error('No se pudo restaurar la cita');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Cargando agenda...</div>
-      </div>
-    );
-  }
 
   const term = searchTerm.trim().toLowerCase();
   const citasFiltradas = citas.filter((cita) => {
@@ -477,7 +461,7 @@ try {
                   </div>
                   
                   <div className="flex items-center gap-2 text-sm mb-1">
-                    <User className="w-4 h-4 text-gray-400" />
+                    <UserIcon className="w-4 h-4 text-gray-400" />
                     <span className="text-gray-900">
                       {cita.paciente?.nombre} {cita.paciente?.apellido}
                     </span>

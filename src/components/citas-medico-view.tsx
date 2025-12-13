@@ -1,14 +1,26 @@
 import { useState, useEffect } from 'react';
+import { useLoaderData, useRevalidator } from 'react-router';
 import { apiClient } from '../lib/api-client';
 import type { Cita } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
 import { Clock, User, FileText, Save } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
+export async function citasMedicoLoader() {
+  const user = await apiClient.getCurrentUser();
+  const hoy = new Date().toISOString().split('T')[0];
+  const response = await apiClient.getCitas({ fecha: hoy, medico_id: user?.id });
+  const citasHoy = response.data.filter(c => 
+    c.estado === 'CONFIRMADA' || c.estado === 'EN_ATENCION' || c.estado === 'PENDIENTE'
+  );
+  return { citas: citasHoy };
+}
+
 export function CitasMedicoView() {
   const { user } = useAuth();
-  const [citas, setCitas] = useState<Cita[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { citas } = useLoaderData() as { citas: Cita[] };
+  const revalidator = useRevalidator();
+  
   const [selectedCita, setSelectedCita] = useState<Cita | null>(null);
   const [apuntes, setApuntes] = useState<Record<string, {
     anamnesis: string;
@@ -19,9 +31,9 @@ export function CitasMedicoView() {
 
   const draftKey = user ? `apuntes_draft_${user.id}` : 'apuntes_draft';
 
-  useEffect(() => {
-    loadCitasDelDia();
-  }, []);
+  const refreshData = () => {
+    revalidator.revalidate();
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -45,21 +57,6 @@ export function CitasMedicoView() {
     if (!user) return;
     localStorage.setItem(draftKey, JSON.stringify(apuntes));
   }, [apuntes, user, draftKey]);
-
-  const loadCitasDelDia = async () => {
-    try {
-      const hoy = new Date().toISOString().split('T')[0];
-      const response = await apiClient.getCitas({ fecha: hoy, medico_id: user?.id });
-      const citasHoy = response.data.filter(c => 
-        c.estado === 'CONFIRMADA' || c.estado === 'EN_ATENCION' || c.estado === 'PENDIENTE'
-      );
-      setCitas(citasHoy);
-    } catch (error) {
-      toast.error('Error al cargar citas del día');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleIniciarAtencion = async (citaId: string) => {
     const cita = citas.find((c) => c.id === citaId);
@@ -85,9 +82,7 @@ export function CitasMedicoView() {
 
     try {
       await apiClient.updateCita(citaId, { estado: 'EN_ATENCION' });
-      setCitas((prev) =>
-        prev.map((c) => (c.id === citaId ? { ...c, estado: 'EN_ATENCION' as const } : c)),
-      );
+      refreshData();
       toast.success('Atención iniciada');
     } catch (error: any) {
       toast.error(error?.message || 'Error al iniciar atención');
@@ -138,9 +133,7 @@ export function CitasMedicoView() {
 
       await apiClient.updateCita(cita.id, { estado: 'COMPLETADA' });
 
-      setCitas((prev) =>
-        prev.map((c) => (c.id === cita.id ? { ...c, estado: 'COMPLETADA' as const } : c)),
-      );
+      refreshData();
 
       setApuntes((prev) => {
         const newApuntes = { ...prev };
@@ -164,14 +157,6 @@ export function CitasMedicoView() {
     };
     return colors[estado as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Cargando citas...</div>
-      </div>
-    );
-  }
 
   const citasOrdenadas = [...citas].sort((a, b) => 
     a.hora_inicio.localeCompare(b.hora_inicio)
