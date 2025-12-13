@@ -1,35 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useLoaderData } from 'react-router';
 import { apiClient } from '../lib/api-client';
 import { Users, Calendar, TrendingUp, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { toast } from 'sonner@2.0.3';
+
+export async function dashboardLoader() {
+  const data = await apiClient.getDashboardStats('GERENTE');
+  return data;
+}
 
 export function DashboardView() {
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      const data = await apiClient.getDashboardStats('GERENTE');
-      setStats(data);
-    } catch (error) {
-      toast.error('Error al cargar estadísticas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Cargando dashboard...</div>
-      </div>
-    );
-  }
+  const stats = useLoaderData() as any;
 
   return (
     <div className="space-y-6">

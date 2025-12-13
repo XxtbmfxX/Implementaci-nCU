@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLoaderData, useRevalidator } from 'react-router';
 import { apiClient } from '../lib/api-client';
 import type { User } from '../lib/api-client';
 import { Plus, Search, Edit2, X, UserCheck, UserX } from 'lucide-react';
@@ -11,6 +12,11 @@ const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const SOLO_LETRAS_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ .]+$/;
 const PHONE_CHILE_REGEX = /^\+56[29]\d{8}$/; // +569xxxxxxxx o +562xxxxxxxx
+
+export async function medicosLoader() {
+  const response = await apiClient.getMedicos();
+  return { medicos: response.data };
+}
 
 function normalizarRut(input: string): string {
   if (!input) return '';
@@ -80,13 +86,18 @@ function formatHorario(medico: User) {
 
 export function MedicosView() {
   const {user, hasPermission } = useAuth();
-  const [medicos, setMedicos] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { medicos } = useLoaderData() as { medicos: User[] };
+  const revalidator = useRevalidator();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingMedico, setEditingMedico] = useState<User | null>(null);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [medicoToToggle, setMedicoToToggle] = useState<User | null>(null);
+
+  const refreshData = () => {
+    revalidator.revalidate();
+  };
 
 if (!hasPermission('ver_medicos')) {
   return (
@@ -148,21 +159,6 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
   setMedicoHorario(prev => prev.map(h => h.id === id ? { ...h, [field!]: value } : h));
 };
 
-
-  useEffect(() => {
-    loadMedicos();
-  }, []);
-
-  const loadMedicos = async () => {
-    try {
-      const response = await apiClient.getMedicos();
-      setMedicos(response.data);
-    } catch (error) {
-      toast.error('Error al cargar médicos');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSaveMedico = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -289,14 +285,13 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
 
     try {
       if (editingMedico) {
-        const updatedMedico = await apiClient.updateMedico(editingMedico.id, data);
-        setMedicos(prev => prev.map(m => m.id === editingMedico.id ? updatedMedico : m));
+        await apiClient.updateMedico(editingMedico.id, data);
         toast.success('Médico actualizado correctamente');
       } else {
         await apiClient.createMedico(data);
-        loadMedicos();
         toast.success('Médico creado correctamente');
       }
+      refreshData();
       setShowModal(false);
       setEditingMedico(null);
       setMedicoHorario([]);
@@ -312,9 +307,7 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
     try {
       const nuevoEstado = !(medico as any).activo;
       await apiClient.updateMedico(medico.id, { activo: nuevoEstado } as any);
-      setMedicos(prev => prev.map(m => 
-        m.id === medico.id ? { ...m, activo: nuevoEstado } as any : m
-      ));
+      refreshData();
       toast.success(`Médico ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`);
     } catch (error) {
       toast.error('Error al cambiar estado del médico');
@@ -330,14 +323,6 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
     ((m as any).regionTrabajo && String((m as any).regionTrabajo).toLowerCase().includes(searchTerm.toLowerCase())) ||
     (((m as any).titulos ?? []).some((t: string) => t.toLowerCase().includes(searchTerm.toLowerCase())))
   );
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Cargando...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

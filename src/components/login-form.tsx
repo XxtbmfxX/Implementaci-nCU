@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useAuth } from '../lib/auth-context';
 import { LogIn, AlertCircle } from 'lucide-react';
 
 export function LoginForm() {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -16,6 +18,7 @@ export function LoginForm() {
 
     try {
       await login(email, password);
+      navigate('/');
     } catch (err) {
       setError('Credenciales inválidas. Intente nuevamente.');
     } finally {

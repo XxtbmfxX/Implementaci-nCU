@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ReactNode } from 'react';
+import { Outlet, NavLink, useNavigate, useNavigation } from 'react-router';
 import { useAuth } from '../lib/auth-context';
 import { 
   Users, 
@@ -10,36 +10,47 @@ import {
   BarChart3,
   Shield,
   Stethoscope,
-  ClipboardList
+  ClipboardList,
+  Loader2
 } from 'lucide-react';
 
-interface LayoutProps {
-  children: ReactNode;
-  currentView: string;
-  onViewChange: (view: string) => void;
-}
-
-export function Layout({ children, currentView, onViewChange }: LayoutProps) {
-  const { user, logout } = useAuth();
+export function Layout() {
+  const { user, logout, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const navigationState = useNavigation();
+  const isNavigating = navigationState.state === 'loading' || navigationState.state === 'submitting';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-gray-500">Cargando...</div>
+      </div>
+    );
+  }
 
   if (!user) return null;
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   const navigation = [
     ...(user.rol === 'MEDICO' ? [
-      { name: 'Citas del Día', icon: ClipboardList, view: 'citas-medico', roles: ['MEDICO'] },
-      { name: 'Agenda General', icon: Calendar, view: 'citas', roles: ['MEDICO'] },
-      { name: 'Pacientes', icon: Users, view: 'pacientes', roles: ['MEDICO'] },
+      { name: 'Citas del Día', icon: ClipboardList, to: '/citas-medico' },
+      { name: 'Agenda General', icon: Calendar, to: '/agenda' },
+      { name: 'Pacientes', icon: Users, to: '/pacientes' },
     ] : []),
     ...(user.rol === 'SECRETARIA' ? [
-      { name: 'Agenda', icon: Calendar, view: 'agenda', roles: ['SECRETARIA'] },
-      { name: 'Pacientes', icon: Users, view: 'pacientes', roles: ['SECRETARIA'] },
-      { name: 'Médicos', icon: Stethoscope, view: 'medicos', roles: ['SECRETARIA'] },
+      { name: 'Agenda', icon: Calendar, to: '/agenda' },
+      { name: 'Pacientes', icon: Users, to: '/pacientes' },
+      { name: 'Médicos', icon: Stethoscope, to: '/medicos' },
     ] : []),
     ...(user.rol === 'GERENTE' ? [
-      { name: 'Dashboard', icon: BarChart3, view: 'dashboard', roles: ['GERENTE'] },
-      { name: 'Médicos', icon: Stethoscope, view: 'medicos', roles: ['GERENTE'] },
-      { name: 'Auditoría', icon: Shield, view: 'auditoria', roles: ['GERENTE'] },
+      { name: 'Dashboard', icon: BarChart3, to: '/dashboard' },
+      { name: 'Médicos', icon: Stethoscope, to: '/medicos' },
+      { name: 'Auditoría', icon: Shield, to: '/auditoria' },
     ] : []),
   ];
 
@@ -73,15 +84,12 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
           <nav className="flex-1 p-4 space-y-1">
             {navigation.map((item) => {
               const Icon = item.icon;
-              const isActive = currentView === item.view;
               return (
-                <button
+                <NavLink
                   key={item.name}
-                  onClick={() => {
-                    onViewChange(item.view);
-                    setSidebarOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                  to={item.to}
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) => `w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
                     isActive
                       ? 'bg-blue-50 text-blue-700'
                       : 'text-gray-700 hover:bg-gray-100'
@@ -89,7 +97,7 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.name}</span>
-                </button>
+                </NavLink>
               );
             })}
           </nav>
@@ -103,7 +111,7 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
               )}
             </div>
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-3 py-2 text-red-700 hover:bg-red-50 rounded-md transition-colors"
             >
               <LogOut className="w-5 h-5" />
@@ -125,6 +133,7 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-4">
+              {isNavigating && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
               <p className="text-sm text-gray-600">
                 {new Date().toLocaleDateString('es-CL', { 
                   weekday: 'long', 
@@ -139,7 +148,7 @@ export function Layout({ children, currentView, onViewChange }: LayoutProps) {
 
         {/* Page content */}
         <main className="p-4 lg:p-6">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

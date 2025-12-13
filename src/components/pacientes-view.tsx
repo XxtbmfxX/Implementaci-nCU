@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLoaderData, useRevalidator } from 'react-router';
 import { apiClient } from '../lib/api-client';
 import type { Paciente } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
@@ -6,34 +7,27 @@ import { Plus, Search, Edit2, FileText, X, UserCheck, UserX } from 'lucide-react
 import { toast } from 'sonner@2.0.3';
 import { validate as validateRut, format as formatRut } from 'rut.js';
 
+export async function pacientesLoader() {
+  const user = await apiClient.getCurrentUser();
+  const isMedico = user?.rol === 'MEDICO';
+  const response = await apiClient.getPacientes(
+    isMedico && user?.id ? { medico_id: user.id } : undefined,
+  );
+  return { pacientes: response.data };
+}
+
 export function PacientesView() {
   const { user, hasPermission } = useAuth();
-  const [pacientes, setPacientes] = useState<Paciente[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { pacientes } = useLoaderData() as { pacientes: Paciente[] };
+  const revalidator = useRevalidator();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingPaciente, setEditingPaciente] = useState<Paciente | null>(null);
   const [selectedPaciente, setSelectedPaciente] = useState<Paciente | null>(null);
 
-
-  useEffect(() => {
-    if (user) {
-      loadPacientes();
-    }
-  }, [user]);
-
-  const loadPacientes = async () => {
-    try {
-      const isMedico = user?.rol === 'MEDICO';
-      const response = await apiClient.getPacientes(
-        isMedico && user?.id ? { medico_id: user.id } : undefined,
-      );
-      setPacientes(response.data);
-    } catch (error) {
-      toast.error('Error al cargar pacientes');
-    } finally {
-      setLoading(false);
-    }
+  const refreshData = () => {
+    revalidator.revalidate();
   };
 function normalizarRut(input: string): string {
   if (!input) return '';
@@ -58,11 +52,9 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
   try {
     const nuevoEstado = !isPacienteActivo(paciente);
     
-    const actualizado = await apiClient.updatePaciente(paciente.id, { estado: nuevoEstado ? "ACTIVO" : "INACTIVO" });
+    await apiClient.updatePaciente(paciente.id, { estado: nuevoEstado ? "ACTIVO" : "INACTIVO" });
 
-    setPacientes(prev =>
-      prev.map(p => p.id === paciente.id ? actualizado : p)
-    );
+    refreshData();
 
     toast.success(`Paciente ${nuevoEstado ? 'activado' : 'desactivado'} correctamente`);
   } catch (error) {
@@ -169,16 +161,13 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
 
     try {
       if (editingPaciente) {
-        const updatedPaciente = await apiClient.updatePaciente(editingPaciente.id, data);
-        // Actualización optimista
-        setPacientes(prev => prev.map(p => p.id === editingPaciente.id ? updatedPaciente : p));
+        await apiClient.updatePaciente(editingPaciente.id, data);
         toast.success('Paciente actualizado correctamente');
       } else {
-        const newPaciente = await apiClient.createPaciente(data);
-        // Agregar el nuevo paciente a la lista local inmediatamente
-        setPacientes(prev => [...prev, newPaciente]);
+        await apiClient.createPaciente(data);
         toast.success('Paciente creado correctamente');
       }
+      refreshData();
       setShowModal(false);
       setEditingPaciente(null);
     } catch (error) {
@@ -188,8 +177,6 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
       } else {
         toast.error('Error al guardar paciente');
       }
-      // Recargar en caso de error
-      loadPacientes();
     }
   };
 
@@ -201,14 +188,6 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
 
   const canCreateOrEdit = hasPermission('crear_pacientes') || hasPermission('actualizar_pacientes');
   const canViewFichas = user?.rol === 'MEDICO';
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Cargando...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
