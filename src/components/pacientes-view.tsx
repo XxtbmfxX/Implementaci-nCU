@@ -177,7 +177,12 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
       setShowModal(false);
       setEditingPaciente(null);
     } catch (error) {
-      toast.error('Error al guardar paciente');
+      const message = error instanceof Error ? error.message : '';
+      if (message.includes('RUT')) {
+        toast.error(message);
+      } else {
+        toast.error('Error al guardar paciente');
+      }
       // Recargar en caso de error
       loadPacientes();
     }

@@ -113,7 +113,17 @@ function cloneArray<T>(items: T[]): T[] {
 
   async createPaciente(data: Omit<Paciente, 'id'>) {
     await delay();
-    const newPaciente: Paciente = { ...data, id: String(Date.now()) };
+    const normalizedRut = normalizeRutValue((data as any).rut);
+    if (normalizedRut) {
+      const exists = this.pacientes.some((p) => normalizeRutValue((p as any).rut) === normalizedRut);
+      if (exists) throw new Error('Ya existe un paciente con este RUT');
+    }
+
+    const newPaciente: Paciente = {
+      ...data,
+      rut: normalizedRut || data.rut,
+      id: String(Date.now()),
+    };
     this.pacientes.push(newPaciente);
     return newPaciente;
   }
@@ -122,7 +132,24 @@ function cloneArray<T>(items: T[]): T[] {
     await delay();
     const idx = this.pacientes.findIndex((p) => p.id === id);
     if (idx === -1) throw new Error('Paciente no encontrado');
-    const updated = { ...this.pacientes[idx], ...data };
+
+    const normalizedRut = data.hasOwnProperty('rut')
+      ? normalizeRutValue((data as any).rut)
+      : undefined;
+
+    if (normalizedRut !== undefined) {
+      if (normalizedRut === '') throw new Error('RUT inválido');
+      const existsRut = this.pacientes.some(
+        (p, i) => i !== idx && normalizeRutValue((p as any).rut) === normalizedRut,
+      );
+      if (existsRut) throw new Error('Ya existe un paciente con este RUT');
+    }
+
+    const updated = {
+      ...this.pacientes[idx],
+      ...data,
+      ...(normalizedRut !== undefined ? { rut: normalizedRut } : {}),
+    };
     this.pacientes[idx] = updated;
     return updated;
   }
