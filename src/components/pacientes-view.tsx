@@ -107,7 +107,7 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
     
     // Validar RUT
     if (!validateRut(rut)) {
-      toast.error('RUT inválido. Por favor ingrese un RUT válido (ej: 12345678-9)');
+      toast.error('RUT inválido. Por favor ingrese un RUT válido');
       return;
     }
     
