@@ -326,7 +326,7 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
 
       {/* Tabla */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        {/* Desktop / Tablet: Table view with sticky header + max height scrollbar */}
+        {/* Desktop / Tablet: Table view with sticky header + limited height */}
         <div className="hidden md:block max-h-[60vh] overflow-auto">
           <div className="overflow-x-auto">
             <table className="min-w-[900px] w-full">
@@ -350,29 +350,48 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                     <tr key={medico.id} className={`hover:bg-gray-50 ${!activo ? 'opacity-60' : ''}`}>
                       <td className="px-4 py-3 text-sm text-gray-900">{medico.nombre}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{medico.email}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{medico.especialidad || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {medico.especialidad || '-'}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{(medico as any).telefono || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{formatHorario(medico) ?? <span className="text-gray-400">-</span>}</td>
+
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {formatHorario(medico) ?? <span className="text-gray-400">-</span>}
+                      </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-1 rounded ${activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        <span
+                          className={`text-xs px-2 py-1 rounded ${
+                            activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}
+                        >
                           {activo ? 'Activo' : 'Inactivo'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
+
                           {hasPermission('gestionar_usuarios') && (
                             <button
-                              onClick={() => { setEditingMedico(medico); setShowModal(true); }}
+                              onClick={() => {
+                                setEditingMedico(medico);
+                                setShowModal(true);
+                              }}
                               className="p-1 text-gray-600 hover:bg-gray-100 rounded"
                               title="Editar"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                           )}
+
                           {hasPermission('gestionar_usuarios') && (
                             <button
-                              onClick={() => { setMedicoToToggle(medico); setConfirmModalVisible(true); }}
-                              className={`p-1 rounded ${activo ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                              onClick={() => {
+                                setMedicoToToggle(medico);
+                                setConfirmModalVisible(true);
+                              }}
+                              className={`p-1 rounded ${
+                                activo ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'
+                              }`}
                               title={activo ? 'Desactivar' : 'Activar'}
                             >
                               {activo ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
@@ -388,7 +407,7 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
           </div>
         </div>
 
-        {/* Mobile: Compact list view with scroll */}
+        {/* Mobile: compact list with scroll */}
         <div className="md:hidden p-3 max-h-[60vh] overflow-y-auto space-y-2">
           {filteredMedicos.map((medico) => {
             const activo = (medico as any).activo !== false;
@@ -401,7 +420,9 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                   <div className="text-xs text-gray-500">{(medico as any).telefono || '-'}</div>
                 </div>
                 <div className="ml-3 flex flex-col items-end gap-2">
-                  <span className={`text-xs px-2 py-1 rounded ${activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{activo ? 'Activo' : 'Inactivo'}</span>
+                  <span className={`text-xs px-2 py-1 rounded ${activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {activo ? 'Activo' : 'Inactivo'}
+                  </span>
                   <div className="flex items-center gap-2">
                     {hasPermission('gestionar_usuarios') && (
                       <button
@@ -432,7 +453,7 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
       {/* Modal Formulario */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full">
+          <div className="bg-white rounded-lg max-w-lg w-full max-h-[80vh] overflow-hidden relative">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-gray-900">
                 {editingMedico ? 'Editar Médico' : 'Nuevo Médico'}
@@ -448,7 +469,8 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
               </button>
             </div>
 
-            <form onSubmit={handleSaveMedico} className="p-6 space-y-4">
+            <form onSubmit={handleSaveMedico} className="w-full">
+              <div className="p-6 overflow-y-auto max-h-[60vh] space-y-4">
               <div>
                 <label className="block text-sm mb-1 text-gray-700">Nombre Completo</label>
                 <input
@@ -505,7 +527,7 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
               <div>
                 <label className="block text-sm mb-2 text-gray-700">Horario de trabajo</label>
 
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-44 overflow-y-auto">
                   {medicoHorario.length === 0 && (
                     <div className="text-sm text-gray-500">No hay bloques de horario definidos.</div>
                   )}
@@ -580,7 +602,9 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 sticky bottom-0 bg-white p-4">
                 <button
                   type="button"
                   onClick={() => {
