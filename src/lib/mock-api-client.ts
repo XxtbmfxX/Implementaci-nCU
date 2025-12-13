@@ -17,6 +17,16 @@ import type { IApiClient } from './api-contracts';
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function normalizeRutValue(input?: string | null): string {
+  if (!input) return '';
+  const raw = String(input).trim().replace(/\s+/g, '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+  if (raw.length < 2) return '';
+  const dv = raw.slice(-1);
+  const num = raw.slice(0, -1);
+  if (!/^\d+$/.test(num)) return '';
+  return `${num}-${dv}`;
+}
+
 function cloneArray<T>(items: T[]): T[] {
   return items.map((item) => ({ ...item }));
 }
@@ -261,7 +271,22 @@ function cloneArray<T>(items: T[]): T[] {
 
   async createMedico(data: Omit<User, 'id'>) {
     await delay();
-    const newMedico: User = { ...data, id: String(Date.now()) };
+    const normalizedRut = normalizeRutValue((data as any).rut);
+    if (normalizedRut) {
+      const existsRut = this.medicos.some((m) => normalizeRutValue((m as any).rut) === normalizedRut);
+      if (existsRut) throw new Error('Ya existe un médico con este RUT');
+    }
+
+    const registro = (data as any).numeroRegistro as string | undefined;
+    if (registro) {
+      if (!/^\d{1,6}$/.test(registro)) {
+        throw new Error('El número de registro debe tener máximo 6 dígitos');
+      }
+      const existsReg = this.medicos.some((m) => (m as any).numeroRegistro === registro);
+      if (existsReg) throw new Error('Ya existe un médico con este número de registro');
+    }
+
+    const newMedico: User = { ...data, rut: normalizedRut || undefined, id: String(Date.now()) };
     this.medicos.push(newMedico);
     return newMedico;
   }
@@ -270,7 +295,27 @@ function cloneArray<T>(items: T[]): T[] {
     await delay();
     const idx = this.medicos.findIndex((m) => m.id === id);
     if (idx === -1) throw new Error('Médico no encontrado');
-    const updated = { ...this.medicos[idx], ...data };
+
+    const normalizedRut = data.hasOwnProperty('rut') ? normalizeRutValue((data as any).rut) : undefined;
+    if (normalizedRut !== undefined) {
+      if (normalizedRut === '') throw new Error('RUT inválido');
+      const existsRut = this.medicos.some((m, i) => i !== idx && normalizeRutValue((m as any).rut) === normalizedRut);
+      if (existsRut) throw new Error('Ya existe un médico con este RUT');
+    }
+
+    if (data.numeroRegistro !== undefined) {
+      if (data.numeroRegistro && !/^\d{1,6}$/.test(data.numeroRegistro)) {
+        throw new Error('El número de registro debe tener máximo 6 dígitos');
+      }
+      const existsReg = this.medicos.some((m, i) => i !== idx && (m as any).numeroRegistro === data.numeroRegistro);
+      if (existsReg) throw new Error('Ya existe un médico con este número de registro');
+    }
+
+    const updated = {
+      ...this.medicos[idx],
+      ...data,
+      ...(normalizedRut !== undefined ? { rut: normalizedRut } : {}),
+    } as User;
     this.medicos[idx] = updated;
     return updated;
   }

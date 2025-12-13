@@ -4,11 +4,23 @@ import type { User } from '../lib/api-client';
 import { Plus, Search, Edit2, X, UserCheck, UserX } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { useAuth } from '../lib/auth-context';
+import { REGIONES_CHILE } from '../utils/regiones';
+import { validate as validateRut } from 'rut.js';
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const SOLO_LETRAS_REGEX = /^[A-Za-zÁÉÍÓÚáéíóúÑñ .]+$/;
 const PHONE_CHILE_REGEX = /^\+56[29]\d{8}$/; // +569xxxxxxxx o +562xxxxxxxx
+
+function normalizarRut(input: string): string {
+  if (!input) return '';
+  const raw = String(input).trim().replace(/\s+/g, '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+  if (raw.length < 2) return '';
+  const dv = raw.slice(-1);
+  const num = raw.slice(0, -1);
+  if (!/^\d+$/.test(num)) return '';
+  return `${num}-${dv}`;
+}
 
 
 function formatHorario(medico: User) {
@@ -90,6 +102,16 @@ const SPECIALIDADES = [
   'Ginecología',
 ];
 
+  const TITULOS = [
+    'Médico Cirujano',
+    'Especialista en Medicina Interna',
+    'Pediatría',
+    'Ginecología y Obstetricia',
+    'Traumatología',
+    'Cardiología',
+    'Medicina Familiar',
+  ];
+
 // Horario por defecto: Lun-Vie 08:00-17:00
 const DEFAULT_HORARIO = [1,2,3,4,5].map((d, i) => ({
   dia: d,
@@ -146,6 +168,33 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
+    const rutRaw = (formData.get('rut') as string) ?? '';
+    const rut = normalizarRut(rutRaw);
+    if (!rut || !validateRut(rut)) {
+      toast.error('Ingrese un RUT válido');
+      return;
+    }
+    const rutDuplicado = medicos.some((m) =>
+      normalizarRut((m as any).rut || '') === rut && (!editingMedico || m.id !== editingMedico.id)
+    );
+    if (rutDuplicado) {
+      toast.error('Ya existe un médico con este RUT');
+      return;
+    }
+
+    const numeroRegistro = ((formData.get('numeroRegistro') as string) || '').trim();
+    if (!/^\d{1,6}$/.test(numeroRegistro)) {
+      toast.error('El número de registro debe tener máximo 6 dígitos numéricos');
+      return;
+    }
+    const regDuplicado = medicos.some((m) =>
+      (m as any).numeroRegistro === numeroRegistro && (!editingMedico || m.id !== editingMedico.id)
+    );
+    if (regDuplicado) {
+      toast.error('Ya existe un médico con este número de registro');
+      return;
+    }
+
     const email = formData.get('email') as string;
 
     // Evitar correos duplicados
@@ -162,6 +211,8 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
     const nombre = formData.get('nombre') as string;
     const especialidad = formData.get('especialidad') as string;
     const telefono = formData.get('telefono') as string;
+  const regionTrabajo = formData.get('regionTrabajo') as string;
+  const titulos = (formData.getAll('titulos') as string[]).map((t) => t.trim()).filter(Boolean);
 
     // Validaciones (consistentes con PacientesView)
     // Nombre: 2-50 caracteres y solo letras/espacios
@@ -183,6 +234,18 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
     // Especialidad (si es select ya estará validada, pero la comprobamos)
     if (!especialidad || especialidad.length < 2) {
       toast.error('Seleccione una especialidad válida');
+      return;
+    }
+
+    // Región de trabajo
+    if (!regionTrabajo || !REGIONES_CHILE.includes(regionTrabajo)) {
+      toast.error('Seleccione una región de trabajo válida');
+      return;
+    }
+
+    // Títulos
+    if (!titulos.length) {
+      toast.error('Seleccione al menos un título');
       return;
     }
 
@@ -212,8 +275,12 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
     }
 
     const data: any = {
+      rut,
       email,
       nombre,
+      numeroRegistro,
+      regionTrabajo,
+      titulos,
       especialidad,
       telefono,
       rol: 'MEDICO' as const,
@@ -257,7 +324,11 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
   const filteredMedicos = medicos.filter(m =>
     m.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.especialidad && m.especialidad.toLowerCase().includes(searchTerm.toLowerCase()))
+    (m.especialidad && m.especialidad.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    ((m as any).rut && String((m as any).rut).toLowerCase().includes(searchTerm.toLowerCase())) ||
+    ((m as any).numeroRegistro && String((m as any).numeroRegistro).toLowerCase().includes(searchTerm.toLowerCase())) ||
+    ((m as any).regionTrabajo && String((m as any).regionTrabajo).toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (((m as any).titulos ?? []).some((t: string) => t.toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
   if (loading) {
@@ -329,12 +400,16 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
         {/* Desktop / Tablet: Table view with sticky header + limited height */}
         <div className="hidden md:block max-h-[60vh] overflow-auto">
           <div className="overflow-x-auto">
-            <table className="min-w-[900px] w-full">
+            <table className="min-w-[1200px] w-full">
               <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <tr>
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">RUT</th>
                   <th className="px-4 py-3 text-left text-sm text-gray-600">Nombre</th>
                   <th className="px-4 py-3 text-left text-sm text-gray-600">Email</th>
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">N° Registro</th>
                   <th className="px-4 py-3 text-left text-sm text-gray-600">Especialidad</th>
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">Región</th>
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">Títulos</th>
                   <th className="px-4 py-3 text-left text-sm text-gray-600">Teléfono</th>
                   <th className="px-4 py-3 text-left text-sm text-gray-600">Horario</th>
                   <th className="px-4 py-3 text-left text-sm text-gray-600">Estado</th>
@@ -348,10 +423,18 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                   const activo = (medico as any).activo !== false;
                   return (
                     <tr key={medico.id} className={`hover:bg-gray-50 ${!activo ? 'opacity-60' : ''}`}>
+                      <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">{(medico as any).rut || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{medico.nombre}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{medico.email}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{(medico as any).numeroRegistro || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {medico.especialidad || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{(medico as any).regionTrabajo || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {((medico as any).titulos ?? []).length
+                          ? ((medico as any).titulos as string[]).join(', ')
+                          : '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{(medico as any).telefono || '-'}</td>
 
@@ -418,6 +501,10 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                   <div className="text-sm text-gray-500 truncate">{medico.especialidad || '-'}</div>
                   <div className="text-xs text-gray-500">{medico.email}</div>
                   <div className="text-xs text-gray-500">{(medico as any).telefono || '-'}</div>
+                  <div className="text-xs text-gray-500">RUT: {(medico as any).rut || '-'}</div>
+                  <div className="text-xs text-gray-500">Reg.: {(medico as any).numeroRegistro || '-'}</div>
+                  <div className="text-xs text-gray-500">Región: {(medico as any).regionTrabajo || '-'}</div>
+                  <div className="text-xs text-gray-500">Títulos: {((medico as any).titulos ?? []).join(', ') || '-'}</div>
                 </div>
                 <div className="ml-3 flex flex-col items-end gap-2">
                   <span className={`text-xs px-2 py-1 rounded ${activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -485,6 +572,39 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-sm mb-1 text-gray-700">RUT</label>
+                  <input
+                    name="rut"
+                    type="text"
+                    defaultValue={(editingMedico as any)?.rut}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="12345678-9"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1 text-gray-700">N° Registro (máx. 6 dígitos)</label>
+                  <input
+                    name="numeroRegistro"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{1,6}"
+                    maxLength={6}
+                    defaultValue={(editingMedico as any)?.numeroRegistro}
+                    onInput={(e) => {
+                      const target = e.currentTarget;
+                      const digits = target.value.replace(/[^0-9]/g, '').slice(0, 6);
+                      if (target.value !== digits) target.value = digits;
+                    }}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="100001"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <label className="block text-sm mb-1 text-gray-700">Email</label>
                   <input
                     name="email"
@@ -506,6 +626,37 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="+56912345678"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-1 text-gray-700">Región de trabajo</label>
+                  <select
+                    name="regionTrabajo"
+                    defaultValue={(editingMedico as any)?.regionTrabajo || REGIONES_CHILE[0]}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {REGIONES_CHILE.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1 text-gray-700">Títulos</label>
+                  <select
+                    name="titulos"
+                    multiple
+                    defaultValue={(editingMedico as any)?.titulos ?? []}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32"
+                  >
+                    {TITULOS.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Use Ctrl/Cmd + click para seleccionar múltiples.</p>
                 </div>
               </div>
 

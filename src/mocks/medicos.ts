@@ -7,6 +7,10 @@ export const initialMedicos: User[] = [
     nombre: 'Dr. Juan Pérez',
     rol: 'MEDICO',
     especialidad: 'Medicina General',
+    rut: '11111111-1',
+    numeroRegistro: '100001',
+    regionTrabajo: 'Metropolitana de Santiago',
+    titulos: ['Médico Cirujano'],
     telefono: '+56911111111',
     activo: true,
     horario: [
@@ -24,6 +28,10 @@ export const initialMedicos: User[] = [
     nombre: 'Dra. María González',
     rol: 'MEDICO',
     especialidad: 'Pediatría',
+    rut: '22222222-2',
+    numeroRegistro: '100002',
+    regionTrabajo: 'Valparaíso',
+    titulos: ['Médico Cirujano', 'Pediatría'],
     telefono: '+56922222222',
     activo: true,
     horario: [
@@ -39,6 +47,10 @@ export const initialMedicos: User[] = [
     nombre: 'Dr. Carlos Rodríguez',
     rol: 'MEDICO',
     especialidad: 'Ginecología',
+    rut: '33333333-3',
+    numeroRegistro: '100003',
+    regionTrabajo: 'Biobío',
+    titulos: ['Médico Cirujano', 'Ginecología y Obstetricia'],
     telefono: '+56933333333',
     activo: true,
     horario: [

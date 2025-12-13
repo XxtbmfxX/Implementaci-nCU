@@ -13,7 +13,11 @@ export interface User {
   email: string;
   nombre: string;
   rol: Rol;
+  rut?: string;
   especialidad?: string;
+  numeroRegistro?: string;
+  regionTrabajo?: string;
+  titulos?: string[];
   telefono?: string;
   activo?: boolean;
   horario?: HorarioBloque[];
