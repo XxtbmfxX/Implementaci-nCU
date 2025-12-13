@@ -85,7 +85,7 @@ export function createInitialCitas(pacientes: Paciente[], medicos: User[]): Cita
 
    {
       paciente_id: '3',
-      medico_id: '2',
+      medico_id: '4',
       fecha: toISODate(17),
       hora_inicio: '15:00',
       hora_fin: '16:30',
