@@ -10,11 +10,41 @@ export function CitasMedicoView() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCita, setSelectedCita] = useState<Cita | null>(null);
-  const [apuntes, setApuntes] = useState<Record<string, string>>({});
+  const [apuntes, setApuntes] = useState<Record<string, {
+    anamnesis: string;
+    examen_fisico: string;
+    diagnostico: string;
+    tratamiento: string;
+  }>>({});
+
+  const draftKey = user ? `apuntes_draft_${user.id}` : 'apuntes_draft';
 
   useEffect(() => {
     loadCitasDelDia();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const stored = localStorage.getItem(draftKey);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as Record<string, {
+          anamnesis: string;
+          examen_fisico: string;
+          diagnostico: string;
+          tratamiento: string;
+        }>;
+        setApuntes(parsed);
+      } catch (error) {
+        console.error('No se pudieron cargar los borradores de apuntes');
+      }
+    }
+  }, [user, draftKey]);
+
+  useEffect(() => {
+    if (!user) return;
+    localStorage.setItem(draftKey, JSON.stringify(apuntes));
+  }, [apuntes, user, draftKey]);
 
   const loadCitasDelDia = async () => {
     try {
@@ -64,8 +94,8 @@ export function CitasMedicoView() {
     }
   };
 
-  const handleGuardarApuntes = (citaId: string, texto: string) => {
-    setApuntes(prev => ({ ...prev, [citaId]: texto }));
+  const handleGuardarApuntes = (citaId: string) => {
+    // Ya se guarda automáticamente en localStorage via useEffect
     toast.success('Apuntes guardados localmente');
   };
 
@@ -81,8 +111,8 @@ export function CitasMedicoView() {
       toast.error('Solo puedes completar citas en atención');
       return;
     }
-    if (!apuntesCita || apuntesCita.trim().length === 0) {
-      toast.error('Debe agregar apuntes antes de completar la atención');
+    if (!apuntesCita || !apuntesCita.anamnesis.trim()) {
+      toast.error('Debe agregar anamnesis antes de completar la atención');
       return;
     }
     if (cita.medico?.activo === false) {
@@ -99,10 +129,10 @@ export function CitasMedicoView() {
         paciente_id: cita.paciente_id,
         medico_id: user?.id || '',
         fecha: hoy,
-        anamnesis: apuntesCita,
-        examen_fisico: '',
-        diagnostico: '',
-        tratamiento: '',
+        anamnesis: apuntesCita.anamnesis,
+        examen_fisico: apuntesCita.examen_fisico,
+        diagnostico: apuntesCita.diagnostico,
+        tratamiento: apuntesCita.tratamiento,
         observaciones: 'Apuntes registrados durante la atención',
       });
 
@@ -262,24 +292,86 @@ export function CitasMedicoView() {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm mb-2 text-gray-700">
-                    Apuntes Clínicos
-                  </label>
-                  <textarea
-                    value={apuntes[selectedCita.id] || ''}
-                    onChange={(e) => setApuntes(prev => ({ 
-                      ...prev, 
-                      [selectedCita.id]: e.target.value 
-                    }))}
-                    placeholder="Registre aquí sus observaciones, síntomas, diagnóstico preliminar, tratamiento indicado, etc."
-                    className="w-full h-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    disabled={selectedCita.estado === 'COMPLETADA'}
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm mb-2 text-gray-700">
+                      Anamnesis
+                    </label>
+                    <textarea
+                      value={apuntes[selectedCita.id]?.anamnesis || ''}
+                      onChange={(e) => setApuntes(prev => {
+                        const current = prev[selectedCita.id] || { anamnesis: '', examen_fisico: '', diagnostico: '', tratamiento: '' };
+                        return {
+                          ...prev,
+                          [selectedCita.id]: { ...current, anamnesis: e.target.value }
+                        };
+                      })}
+                      placeholder="Registre aquí la anamnesis del paciente"
+                      className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      disabled={selectedCita.estado === 'COMPLETADA'}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm mb-2 text-gray-700">
+                      Examen Físico
+                    </label>
+                    <textarea
+                      value={apuntes[selectedCita.id]?.examen_fisico || ''}
+                      onChange={(e) => setApuntes(prev => {
+                        const current = prev[selectedCita.id] || { anamnesis: '', examen_fisico: '', diagnostico: '', tratamiento: '' };
+                        return {
+                          ...prev,
+                          [selectedCita.id]: { ...current, examen_fisico: e.target.value }
+                        };
+                      })}
+                      placeholder="Registre aquí el examen físico"
+                      className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      disabled={selectedCita.estado === 'COMPLETADA'}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm mb-2 text-gray-700">
+                      Diagnóstico
+                    </label>
+                    <textarea
+                      value={apuntes[selectedCita.id]?.diagnostico || ''}
+                      onChange={(e) => setApuntes(prev => {
+                        const current = prev[selectedCita.id] || { anamnesis: '', examen_fisico: '', diagnostico: '', tratamiento: '' };
+                        return {
+                          ...prev,
+                          [selectedCita.id]: { ...current, diagnostico: e.target.value }
+                        };
+                      })}
+                      placeholder="Registre aquí el diagnóstico"
+                      className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      disabled={selectedCita.estado === 'COMPLETADA'}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm mb-2 text-gray-700">
+                      Tratamiento
+                    </label>
+                    <textarea
+                      value={apuntes[selectedCita.id]?.tratamiento || ''}
+                      onChange={(e) => setApuntes(prev => {
+                        const current = prev[selectedCita.id] || { anamnesis: '', examen_fisico: '', diagnostico: '', tratamiento: '' };
+                        return {
+                          ...prev,
+                          [selectedCita.id]: { ...current, tratamiento: e.target.value }
+                        };
+                      })}
+                      placeholder="Registre aquí el tratamiento indicado"
+                      className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      disabled={selectedCita.estado === 'COMPLETADA'}
+                    />
+                  </div>
                   
                   <div className="flex gap-2 mt-4">
                     <button
-                      onClick={() => handleGuardarApuntes(selectedCita.id, apuntes[selectedCita.id] || '')}
+                      onClick={() => handleGuardarApuntes(selectedCita.id)}
                       disabled={selectedCita.estado === 'COMPLETADA'}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >

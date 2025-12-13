@@ -69,6 +69,12 @@ export interface FichaClinica {
   tratamiento: string;
   observaciones: string;
   bloqueada: boolean;
+  addenda?: {
+    id: string;
+    medico_id: string;
+    fecha: string;
+    texto: string;
+  }[];
 }
 
 export interface AuditLog {

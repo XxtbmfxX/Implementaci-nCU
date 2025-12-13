@@ -12,5 +12,6 @@ export const initialFichas: FichaClinica[] = [
     tratamiento: 'Paracetamol 500mg c/8hrs por 5 días',
     observaciones: 'Control en 1 semana',
     bloqueada: true,
+    addenda: [],
   },
 ];

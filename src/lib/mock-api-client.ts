@@ -82,10 +82,30 @@ function cloneArray<T>(items: T[]): T[] {
     return user;
   }
 
-  async getPacientes(params?: { search?: string; page?: number; limit?: number }): Promise<Paginated<Paciente>> {
+  async getPacientes(params?: {
+    search?: string;
+    page?: number;
+    limit?: number;
+    medico_id?: string;
+    incluir_canceladas?: boolean;
+  }): Promise<Paginated<Paciente>> {
     await delay();
     const search = params?.search?.toLowerCase().trim();
+    const medicoId = params?.medico_id;
+    const incluirCanceladas = params?.incluir_canceladas ?? false;
+
     let data = [...this.pacientes];
+
+    if (medicoId) {
+      const citasDelMedico = this.citas.filter(
+        (c) => c.medico_id === medicoId && (incluirCanceladas || c.estado !== 'CANCELADA'),
+      );
+      const pacienteIds = Array.from(new Set(citasDelMedico.map((c) => c.paciente_id).filter(Boolean)));
+      if (pacienteIds.length === 0) {
+        return { data: [], total: 0 };
+      }
+      data = data.filter((p) => pacienteIds.includes(p.id));
+    }
 
     if (search) {
       data = data.filter((p) =>
@@ -258,9 +278,13 @@ function cloneArray<T>(items: T[]): T[] {
     return { success: true } as const;
   }
 
-  async getFichasByPaciente(pacienteId: string) {
+  async getFichasByPaciente(pacienteId: string, medico_id?: string) {
     await delay();
-    return { data: this.fichas.filter((f) => f.paciente_id === pacienteId) };
+    const fichas = this.fichas.filter((f) => f.paciente_id === pacienteId);
+    if (medico_id) {
+      return { data: fichas.filter((f) => f.medico_id === medico_id) };
+    }
+    return { data: fichas };
   }
 
   async createFicha(data: Omit<FichaClinica, 'id' | 'bloqueada'>) {
@@ -268,10 +292,33 @@ function cloneArray<T>(items: T[]): T[] {
     const newFicha: FichaClinica = {
       ...data,
       id: String(Date.now()),
-      bloqueada: false,
+      bloqueada: true,
+      addenda: [],
     };
     this.fichas.push(newFicha);
     return newFicha;
+  }
+
+  async addAddendum(fichaId: string, data: { texto: string; medico_id: string }) {
+    await delay();
+    const idx = this.fichas.findIndex((f) => f.id === fichaId);
+    if (idx === -1) throw new Error('Ficha no encontrada');
+    const ficha = this.fichas[idx];
+    if (ficha.medico_id !== data.medico_id) {
+      throw new Error('No autorizado para agregar addendum a esta ficha');
+    }
+
+    const addendum = {
+      id: String(Date.now()),
+      medico_id: data.medico_id,
+      fecha: new Date().toISOString(),
+      texto: data.texto,
+    } as const;
+
+    const addenda = Array.isArray(ficha.addenda) ? [...ficha.addenda, addendum] : [addendum];
+    const updated: FichaClinica = { ...ficha, addenda };
+    this.fichas[idx] = updated;
+    return updated;
   }
 
   async getAuditLogs(_params?: { page?: number; limit?: number }) {

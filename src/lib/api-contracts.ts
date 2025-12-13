@@ -15,7 +15,13 @@ export interface IApiClient {
   login(email: string, password: string): Promise<AuthPayload>;
   getCurrentUser(): Promise<User>;
 
-  getPacientes(params?: { search?: string; page?: number; limit?: number }): Promise<Paginated<Paciente>>;
+  getPacientes(params?: {
+    search?: string;
+    page?: number;
+    limit?: number;
+    medico_id?: string;
+    incluir_canceladas?: boolean;
+  }): Promise<Paginated<Paciente>>;
   getPaciente(id: string): Promise<Paciente>;
   createPaciente(data: Omit<Paciente, 'id'>): Promise<Paciente>;
   updatePaciente(id: string, data: Partial<Paciente>): Promise<Paciente>;
@@ -26,7 +32,8 @@ export interface IApiClient {
   updateCita(id: string, data: Partial<Cita>): Promise<Cita>;
   deleteCita(id: string): Promise<{ success: boolean }>;
 
-  getFichasByPaciente(pacienteId: string): Promise<{ data: FichaClinica[] }>;
+  getFichasByPaciente(pacienteId: string, medico_id?: string): Promise<{ data: FichaClinica[] }>;
+  addAddendum(fichaId: string, data: { texto: string; medico_id: string }): Promise<FichaClinica>;
   createFicha(data: Omit<FichaClinica, 'id' | 'bloqueada'>): Promise<FichaClinica>;
 
   getAuditLogs(params?: { page?: number; limit?: number }): Promise<Paginated<AuditLog>>;

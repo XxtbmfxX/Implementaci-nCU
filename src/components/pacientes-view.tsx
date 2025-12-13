@@ -17,12 +17,17 @@ export function PacientesView() {
 
 
   useEffect(() => {
-    loadPacientes();
-  }, []);
+    if (user) {
+      loadPacientes();
+    }
+  }, [user]);
 
   const loadPacientes = async () => {
     try {
-      const response = await apiClient.getPacientes();
+      const isMedico = user?.rol === 'MEDICO';
+      const response = await apiClient.getPacientes(
+        isMedico && user?.id ? { medico_id: user.id } : undefined,
+      );
       setPacientes(response.data);
     } catch (error) {
       toast.error('Error al cargar pacientes');
@@ -253,75 +258,85 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredPacientes.map((paciente) => (
-                <tr key={paciente.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-900">{paciente.rut}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    {paciente.nombre} {paciente.apellido}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    <div>{paciente.telefono}</div>
-                    <div className="text-xs text-gray-500">{paciente.email}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{paciente.prevision}</td>
-                  <td className="px-4 py-3">
-                  <span
-                    className={`text-xs px-2 py-1 rounded ${
-                    isPacienteActivo(paciente)
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                    }`}
-                    >
-                    {isPacienteActivo(paciente) ? 'Activo' : 'Inactivo'}
-                  </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {canViewFichas && (
-                        <button
-                          onClick={() => setSelectedPaciente(paciente)}
-                          className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                          title="Ver Ficha Clínica"
-                        >
-                          <FileText className="w-4 h-4" />
-                        </button>
-                      )}
-                      {canCreateOrEdit && (
-                        <button
-                          onClick={() => {
-                            setEditingPaciente(paciente);
-                            setShowModal(true);
-                          }}
-                          className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                          title="Editar"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                      )}
-              {/* ACTIVAR / DESACTIVAR */}
-                        <button
-                          onClick={() => handleToggleEstadoPaciente(paciente)}
-                          className={`p-1 rounded ${
-                            isPacienteActivo(paciente)
-                      ? "text-red-600 hover:bg-red-50"
-                      : "text-green-600 hover:bg-green-50"
-                  }`}
-                  title={
-                    isPacienteActivo(paciente) ? "Desactivar" : "Activar"
-                  }
-                >
-                  {isPacienteActivo(paciente) ? (
-                    <UserX className="w-4 h-4" />
-                  ) : (
-                    <UserCheck className="w-4 h-4" />
-                  )}
-                </button>
-
-
-                    </div>
+              {filteredPacientes.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
+                    {user?.rol === 'MEDICO'
+                      ? 'No tienes pacientes con citas asignadas.'
+                      : 'No hay pacientes que coincidan con la búsqueda.'}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredPacientes.map((paciente) => (
+                  <tr key={paciente.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm text-gray-900">{paciente.rut}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {paciente.nombre} {paciente.apellido}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      <div>{paciente.telefono}</div>
+                      <div className="text-xs text-gray-500">{paciente.email}</div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{paciente.prevision}</td>
+                    <td className="px-4 py-3">
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${
+                      isPacienteActivo(paciente)
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                      }`}
+                      >
+                      {isPacienteActivo(paciente) ? 'Activo' : 'Inactivo'}
+                    </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {canViewFichas && (
+                          <button
+                            onClick={() => setSelectedPaciente(paciente)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            title="Ver Ficha Clínica"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                        )}
+                        {canCreateOrEdit && (
+                          <button
+                            onClick={() => {
+                              setEditingPaciente(paciente);
+                              setShowModal(true);
+                            }}
+                            className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                            title="Editar"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        )}
+                {/* ACTIVAR / DESACTIVAR */}
+                          <button
+                            onClick={() => handleToggleEstadoPaciente(paciente)}
+                            className={`p-1 rounded ${
+                              isPacienteActivo(paciente)
+                        ? "text-red-600 hover:bg-red-50"
+                        : "text-green-600 hover:bg-green-50"
+                    }`}
+                    title={
+                      isPacienteActivo(paciente) ? "Desactivar" : "Activar"
+                    }
+                  >
+                    {isPacienteActivo(paciente) ? (
+                      <UserX className="w-4 h-4" />
+                    ) : (
+                      <UserCheck className="w-4 h-4" />
+                    )}
+                  </button>
+
+
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -470,8 +485,11 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
 }
 
 function FichaClinicaModal({ paciente, onClose }: { paciente: Paciente; onClose: () => void }) {
+  const { user } = useAuth();
   const [fichas, setFichas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addendumDrafts, setAddendumDrafts] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadFichas();
@@ -479,12 +497,36 @@ function FichaClinicaModal({ paciente, onClose }: { paciente: Paciente; onClose:
 
   const loadFichas = async () => {
     try {
-      const response = await apiClient.getFichasByPaciente(paciente.id);
-      setFichas(response.data);
+      const response = await apiClient.getFichasByPaciente(paciente.id, user?.id);
+      const visibles = user?.id ? response.data.filter((f) => f.medico_id === user.id) : response.data;
+      setFichas(visibles);
     } catch (error) {
       toast.error('Error al cargar fichas clínicas');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddAddendum = async (fichaId: string) => {
+    const texto = addendumDrafts[fichaId]?.trim() || '';
+    if (!texto) {
+      toast.error('El addendum no puede estar vacío');
+      return;
+    }
+    if (!user?.id) {
+      toast.error('No hay usuario autenticado');
+      return;
+    }
+    setSubmitting((prev) => ({ ...prev, [fichaId]: true }));
+    try {
+      const updated = await apiClient.addAddendum(fichaId, { texto, medico_id: user.id });
+      setFichas((prev) => prev.map((f) => (f.id === fichaId ? updated : f)));
+      setAddendumDrafts((prev) => ({ ...prev, [fichaId]: '' }));
+      toast.success('Addendum agregado');
+    } catch (error: any) {
+      toast.error(error?.message || 'No se pudo agregar el addendum');
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [fichaId]: false }));
     }
   };
 
@@ -526,21 +568,66 @@ function FichaClinicaModal({ paciente, onClose }: { paciente: Paciente; onClose:
                   </div>
                   <div className="space-y-2 text-sm">
                     <div>
-                      <span className="text-gray-700">Anamnesis:</span>
-                      <p className="text-gray-900 mt-1">{ficha.anamnesis}</p>
+                      <span className="text-gray-700 font-medium">Anamnesis:</span>
+                      <p className="text-gray-900 mt-1 bg-gray-50 p-3 rounded-md border border-gray-200 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                        {ficha.anamnesis || 'No registrado'}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-gray-700">Examen Físico:</span>
-                      <p className="text-gray-900 mt-1">{ficha.examen_fisico}</p>
+                      <span className="text-gray-700 font-medium">Examen Físico:</span>
+                      <p className="text-gray-900 mt-1 bg-gray-50 p-3 rounded-md border border-gray-200 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                        {ficha.examen_fisico || 'No registrado'}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-gray-700">Diagnóstico:</span>
-                      <p className="text-gray-900 mt-1">{ficha.diagnostico}</p>
+                      <span className="text-gray-700 font-medium">Diagnóstico:</span>
+                      <p className="text-gray-900 mt-1 bg-gray-50 p-3 rounded-md border border-gray-200 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                        {ficha.diagnostico || 'No registrado'}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-gray-700">Tratamiento:</span>
-                      <p className="text-gray-900 mt-1">{ficha.tratamiento}</p>
+                      <span className="text-gray-700 font-medium">Tratamiento:</span>
+                      <p className="text-gray-900 mt-1 bg-gray-50 p-3 rounded-md border border-gray-200 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                        {ficha.tratamiento || 'No registrado'}
+                      </p>
                     </div>
+                    {Array.isArray(ficha.addenda) && ficha.addenda.length > 0 && (
+                      <div className="space-y-2">
+                        <span className="text-gray-700">Addenda:</span>
+                        <div className="space-y-2">
+                          {ficha.addenda.map((add: any) => (
+                            <div key={add.id} className="bg-gray-50 border border-gray-200 rounded p-2">
+                              <div className="flex justify-between text-xs text-gray-600 mb-1">
+                                <span>{new Date(add.fecha).toLocaleString('es-CL')}</span>
+                              </div>
+                              <p className="text-sm text-gray-900 whitespace-pre-line">{add.texto}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {ficha.medico_id === user?.id && (
+                      <div className="pt-3 border-t border-gray-200 space-y-2">
+                        <label className="text-sm text-gray-700">Agregar addendum</label>
+                        <textarea
+                          value={addendumDrafts[ficha.id] || ''}
+                          onChange={(e) =>
+                            setAddendumDrafts((prev) => ({ ...prev, [ficha.id]: e.target.value }))
+                          }
+                          className="w-full min-h-[80px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Notas adicionales sobre la atención"
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => handleAddAddendum(ficha.id)}
+                            disabled={submitting[ficha.id]}
+                            className="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {submitting[ficha.id] ? 'Guardando...' : 'Agregar Addendum'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
