@@ -67,12 +67,26 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
     const formData = new FormData(e.currentTarget);
     
     const rut = formData.get('rut') as string;
+    // Normalizar RUT (sin puntos, con guión)
+    const rutNormalizado = rut.replace(/\./g, '').toUpperCase();
+
+    // Validar RUT duplicado
+    const rutDuplicado = pacientes.some(p =>
+      p.rut.replace(/\./g, '').toUpperCase() === rutNormalizado &&
+      p.id !== editingPaciente?.id
+    );
+
+    if (rutDuplicado) {
+      toast.error('Ya existe un paciente registrado con este RUT');
+      return;
+    }
     const fechaNacimiento = formData.get('fecha_nacimiento') as string;
     const telefono = formData.get('telefono') as string;
     const nombre = formData.get('nombre') as string;
     const apellido = formData.get('apellido') as string;
     const direccion = formData.get('direccion') as string;
     const soloLetras = /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/;
+    
     
     // Validar RUT
     if (!validateRut(rut)) {
