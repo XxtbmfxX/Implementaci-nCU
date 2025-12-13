@@ -326,93 +326,126 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
 
       {/* Tabla */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm text-gray-600">Nombre</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-600">Email</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-600">Especialidad</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-600">Teléfono</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-600">Horario</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-600">Estado</th>
-                {hasPermission('gestionar_usuarios') && (
-                  <th className="px-4 py-3 text-left text-sm text-gray-600">Acciones</th>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredMedicos.map((medico) => {
-                const activo = (medico as any).activo !== false;
-                return (
-                  <tr key={medico.id} className={`hover:bg-gray-50 ${!activo ? 'opacity-60' : ''}`}>
-                    <td className="px-4 py-3 text-sm text-gray-900">{medico.nombre}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{medico.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {medico.especialidad || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {(medico as any).telefono || '-'}
-                    </td>
+        {/* Desktop / Tablet: Table view with sticky header + max height scrollbar */}
+        <div className="hidden md:block max-h-[60vh] overflow-auto">
+          <div className="overflow-x-auto">
+            <table className="min-w-[900px] w-full">
+              <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">Nombre</th>
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">Email</th>
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">Especialidad</th>
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">Teléfono</th>
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">Horario</th>
+                  <th className="px-4 py-3 text-left text-sm text-gray-600">Estado</th>
+                  {hasPermission('gestionar_usuarios') && (
+                    <th className="px-4 py-3 text-left text-sm text-gray-600">Acciones</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredMedicos.map((medico) => {
+                  const activo = (medico as any).activo !== false;
+                  return (
+                    <tr key={medico.id} className={`hover:bg-gray-50 ${!activo ? 'opacity-60' : ''}`}>
+                      <td className="px-4 py-3 text-sm text-gray-900">{medico.nombre}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{medico.email}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {medico.especialidad || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {(medico as any).telefono || '-'}
+                      </td>
 
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {formatHorario(medico) ?? <span className="text-gray-400">-</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-xs px-2 py-1 rounded ${
-                          activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {formatHorario(medico) ?? <span className="text-gray-400">-</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs px-2 py-1 rounded ${
+                            activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {activo ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {hasPermission('gestionar_usuarios') && (
+                            <button
+                              onClick={() => {
+                                setEditingMedico(medico);
+                                setShowModal(true);
+                              }}
+                              className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                              title="Editar"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {hasPermission('gestionar_usuarios') && (
+                            <button
+                              onClick={() => {
+                                setMedicoToToggle(medico);
+                                setConfirmModalVisible(true);
+                              }}
+                              className={`p-1 rounded ${
+                                activo ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'
+                              }`}
+                              title={activo ? 'Desactivar' : 'Activar'}
+                            >
+                              {activo ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Mobile: Compact list view with scroll */}
+        <div className="md:hidden p-3 max-h-[60vh] overflow-y-auto space-y-2">
+          {filteredMedicos.map((medico) => {
+            const activo = (medico as any).activo !== false;
+            return (
+              <div key={medico.id} className={`bg-white border border-gray-200 rounded p-3 flex items-start justify-between ${!activo ? 'opacity-60' : ''}`}>
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 truncate">{medico.nombre}</div>
+                  <div className="text-sm text-gray-500 truncate">{medico.especialidad || '-'}</div>
+                  <div className="text-xs text-gray-500">{medico.email}</div>
+                  <div className="text-xs text-gray-500">{(medico as any).telefono || '-'}</div>
+                </div>
+                <div className="ml-3 flex flex-col items-end gap-2">
+                  <span className={`text-xs px-2 py-1 rounded ${activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {activo ? 'Activo' : 'Inactivo'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {hasPermission('gestionar_usuarios') && (
+                      <button
+                        onClick={() => { setEditingMedico(medico); setShowModal(true); }}
+                        title="Editar"
+                        className="p-1 text-gray-600 hover:bg-gray-100 rounded"
                       >
-                        {activo ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-
-                        {/* Botón Editar (solo GERENTE) */}
-                        {hasPermission('gestionar_usuarios') && (
-                          <button
-                            onClick={() => {
-                              setEditingMedico(medico);
-                              setShowModal(true);
-                            }}
-                            className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                            title="Editar"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                        )}
-
-                        {/* Activar / Desactivar (solo GERENTE) */}
-                        {hasPermission('gestionar_usuarios') && (
-                          <button
-                            onClick={() => {
-                              setMedicoToToggle(medico);
-                              setConfirmModalVisible(true);
-                            }}
-                            className={`p-1 rounded ${
-                              activo
-                                ? 'text-red-600 hover:bg-red-50'
-                                : 'text-green-600 hover:bg-green-50'
-                            }`}
-                            title={activo ? 'Desactivar' : 'Activar'}
-                          >
-                            {activo ? (
-                              <UserX className="w-4 h-4" />
-                            ) : (
-                              <UserCheck className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
-
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    {hasPermission('gestionar_usuarios') && (
+                      <button
+                        onClick={() => { setMedicoToToggle(medico); setConfirmModalVisible(true); }}
+                        title={activo ? 'Desactivar' : 'Activar'}
+                        className={`p-1 rounded ${activo ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}>
+                        {activo ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
