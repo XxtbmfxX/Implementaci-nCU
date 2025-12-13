@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiClient } from '../lib/api-client';
 import type { Cita, Paciente, User } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
-import { Plus, Calendar as CalendarIcon, Clock, User, X, Check, Search, RotateCcw } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Clock, User, X, Check, Search, RotateCcw, Edit2 } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 
 type PeriodoVista = 'dia' | 'semana' | 'mes';
@@ -515,6 +515,18 @@ try {
                         title="Restaurar"
                       >
                         <RotateCcw className="w-4 h-4" />
+                      </button>
+                    )}
+                    {['PENDIENTE', 'CONFIRMADA'].includes(cita.estado) && (
+                      <button
+                        onClick={() => {
+                          setSelectedCita(cita);
+                          setShowModal(true);
+                        }}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
+                        title="Editar"
+                      >
+                        <Edit2 className="w-4 h-4" />
                       </button>
                     )}
                     {cita.estado !== 'CANCELADA' && cita.estado !== 'COMPLETADA' && (
