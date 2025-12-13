@@ -30,6 +30,14 @@ export function PacientesView() {
       setLoading(false);
     }
   };
+function normalizarRut(rut: string): string {
+  return rut
+    .replace(/\./g, '')          // quitar puntos
+    .replace(/-/g, '')           // quitar guión
+    .trim()
+    .toUpperCase()
+    .replace(/^(\d+)([0-9K])$/, '$1-$2'); // agregar guión antes del DV
+}  
 
 const isPacienteActivo = (p: Paciente) => {
   const s = (p as any).estado;
@@ -66,13 +74,12 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    const rut = formData.get('rut') as string;
-    // Normalizar RUT (sin puntos, con guión)
-    const rutNormalizado = rut.replace(/\./g, '').toUpperCase();
+    const rutRaw = formData.get('rut') as string;
+    const rut = normalizarRut(rutRaw);
 
     // Validar RUT duplicado
     const rutDuplicado = pacientes.some(p =>
-      p.rut.replace(/\./g, '').toUpperCase() === rutNormalizado &&
+      normalizarRut(p.rut) === rut &&
       p.id !== editingPaciente?.id
     );
 
