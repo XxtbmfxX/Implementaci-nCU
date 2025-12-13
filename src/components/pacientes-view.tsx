@@ -160,7 +160,7 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
 
     const data = Object.fromEntries(formData) as any;
     data.activo = true;
-    data.rut = formatRut(rut); // Formatear el RUT
+    data.rut = rut; // Formatear el RUT
 
     try {
       if (editingPaciente) {
