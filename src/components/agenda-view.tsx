@@ -42,8 +42,12 @@ export function AgendaView() {
 
   const loadData = async () => {
     try {
+      const citasParams =
+        user?.rol === 'MEDICO'
+          ? { medico_id: user.id }
+          : {};
       const [citasRes, pacientesRes, medicosRes] = await Promise.all([
-        apiClient.getCitas({}),
+        apiClient.getCitas(citasParams),
         apiClient.getPacientes(),
         (apiClient as any).getMedicos(),
       ]);
