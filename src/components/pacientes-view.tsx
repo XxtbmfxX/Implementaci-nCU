@@ -30,14 +30,19 @@ export function PacientesView() {
       setLoading(false);
     }
   };
-function normalizarRut(rut: string): string {
-  return rut
-    .replace(/\./g, '')          // quitar puntos
-    .replace(/-/g, '')           // quitar guión
-    .trim()
-    .toUpperCase()
-    .replace(/^(\d+)([0-9K])$/, '$1-$2'); // agregar guión antes del DV
-}  
+function normalizarRut(input: string): string {
+  if (!input) return '';
+  // quitar espacios, puntos y guiones, dejar mayúsculas
+  const raw = String(input).trim().replace(/\s+/g, '').replace(/\./g, '').replace(/-/g, '').toUpperCase();
+  // si no queda al menos 2 chars, devolver vacío
+  if (raw.length < 2) return '';
+  // último caracter = DV
+  const dv = raw.slice(-1);
+  const num = raw.slice(0, -1);
+  // prevenir que num no sea numérico
+  if (!/^\d+$/.test(num)) return '';
+  return `${num}-${dv}`;
+}
 
 const isPacienteActivo = (p: Paciente) => {
   const s = (p as any).estado;
@@ -74,9 +79,14 @@ const handleToggleEstadoPaciente = async (paciente: Paciente) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    const rutRaw = formData.get('rut') as string;
+
+    const rutRaw = (formData.get('rut') as string) ?? '';
     const rut = normalizarRut(rutRaw);
 
+    if (!rut) {
+      toast.error('Ingrese un RUT válido');
+      return;
+    }
     // Validar RUT duplicado
     const rutDuplicado = pacientes.some(p =>
       normalizarRut(p.rut) === rut &&
