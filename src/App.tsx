@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { AuthProvider, useAuth } from './lib/auth-context';
-import { LoginForm } from './components/login-form';
+import { useAuth } from './lib/auth-context';
+import { LoginForm } from './components/LoginForm';
 import { Layout } from './components/layout';
 import { PacientesView } from './components/pacientes-view';
 import { AgendaView } from './components/agenda-view';
@@ -8,7 +8,7 @@ import { DashboardView } from './components/dashboard-view';
 import { AuditoriaView } from './components/auditoria-view';
 import { CitasMedicoView } from './components/citas-medico-view';
 import { MedicosView } from './components/medicos-view';
-import { Toaster } from 'sonner@2.0.3';
+ 
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -65,10 +65,5 @@ function AppContent() {
 }
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <Toaster position="top-right" richColors />
-      <AppContent />
-    </AuthProvider>
-  );
+  return <AppContent />;
 }
