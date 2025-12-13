@@ -8,7 +8,7 @@ import { DashboardView } from './components/dashboard-view';
 import { AuditoriaView } from './components/auditoria-view';
 import { CitasMedicoView } from './components/citas-medico-view';
 import { MedicosView } from './components/medicos-view';
- 
+
 
 function AppContent() {
   const { user, loading } = useAuth();

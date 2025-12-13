@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiClient } from './api-client';
 import type { User } from './api-client';
+import { supabase } from '../supabaseClient';
 
 interface AuthContextType {
   user: User | null;
@@ -18,11 +19,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     checkAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event: string, session: any) => {
+      if (session?.access_token) {
+        apiClient.setToken(session.access_token);
+      } else {
+        apiClient.setToken(null);
+      }
+
+      if (event === 'SIGNED_IN') {
+        apiClient.getCurrentUser().then((u) => setUser(u)).catch(() => {});
+      }
+
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe?.();
+    };
   }, []);
 
   const checkAuth = async () => {
     setLoading(true);
     try {
+      // Prefer Supabase session if available
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData?.session ?? null;
+        if (session?.access_token) {
+          apiClient.setToken(session.access_token);
+          // try get Supabase user data
+          const { data: userData } = await supabase.auth.getUser();
+          const sUser = userData?.user ?? null;
+          if (sUser) {
+            const mapped: User = {
+              id: sUser.id,
+              email: sUser.email ?? '',
+              nombre:
+                (sUser.user_metadata && (sUser.user_metadata.nombre || sUser.user_metadata.name)) ||
+                (sUser.email ? sUser.email.split('@')[0] : 'Usuario'),
+              rol: (sUser.user_metadata?.rol as any) || 'SECRETARIA',
+              telefono: sUser.user_metadata?.telefono,
+              activo: sUser.user_metadata?.activo ?? true,
+            } as User;
+            setUser(mapped);
+            return;
+          }
+        }
+      } catch (err) {
+        // ignore supabase errors and fallback to apiClient
+      }
+
       const token = apiClient.getToken();
       if (token) {
         const currentUser = await apiClient.getCurrentUser();
@@ -52,8 +101,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     apiClient.setToken(null);
     setUser(null);
-    // Si quieres asegurar 100% limpieza visual:
-    // window.location.reload();
   };
 
   const hasPermission = (permission: string): boolean => {

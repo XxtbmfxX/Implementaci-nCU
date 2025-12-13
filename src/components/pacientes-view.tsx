@@ -32,15 +32,14 @@ export function PacientesView() {
   };
 
 const isPacienteActivo = (p: Paciente) => {
-  const s = (p as any).estado;
+  const s = (p as any).activo;
   return s === true || s === 1 || s === "ACTIVO" || s === "activo";
 };
 
 const handleToggleEstadoPaciente = async (paciente: Paciente) => {
   try {
     const nuevoEstado = !isPacienteActivo(paciente);
-    
-    const actualizado = await apiClient.updatePaciente(paciente.id, { estado: nuevoEstado ? "ACTIVO" : "INACTIVO" });
+    const actualizado = await apiClient.updatePaciente(paciente.id, { activo: nuevoEstado });
 
     setPacientes(prev =>
       prev.map(p => p.id === paciente.id ? actualizado : p)

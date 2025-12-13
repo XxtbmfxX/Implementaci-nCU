@@ -1,7 +1,9 @@
 import { MockApiClient } from './mock-api-client';
 import type { IApiClient } from './api-contracts';
+import SupabaseApiClient from './supabase-api-client';
 
 export function createApiClient(): IApiClient {
-  // Preparado para futuros data sources (Supabase/API).
-  return new MockApiClient();
+  const useMocks = (import.meta.env.VITE_USE_MOCKS ?? 'true') === 'true';
+  if (useMocks) return new MockApiClient();
+  return new SupabaseApiClient();
 }

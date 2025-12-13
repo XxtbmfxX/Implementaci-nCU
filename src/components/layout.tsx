@@ -16,11 +16,11 @@ import {
 
 interface LayoutProps {
   children: ReactNode;
-  currentView: string;
-  onViewChange: (view: string) => void;
+  currentView?: string;
+  onViewChange?: (view: string) => void;
 }
 
-export function Layout({ children,}: LayoutProps) {
+export function Layout({ children }: LayoutProps) {
    const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -99,7 +99,10 @@ export function Layout({ children,}: LayoutProps) {
               )}
             </div>
             <button
-              onClick={logout}
+              onClick={() => {
+                logout();
+                navigate('/login', { replace: true });
+              }}
               className="w-full flex items-center gap-3 px-3 py-2 text-red-700 hover:bg-red-50 rounded-md transition-colors"
             >
               <LogOut className="w-5 h-5" />
