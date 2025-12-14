@@ -1,5 +1,17 @@
 export type Rol = "MEDICO" | "SECRETARIA" | "GERENTE";
 
+export interface Permiso {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+}
+
+export interface RolDefinition {
+  id: string;
+  nombre: Rol;
+  descripcion?: string;
+  permisos?: Permiso[];
+}
 
 export interface HorarioBloque {
   // 0 = domingo ... 6 = sábado
@@ -15,8 +27,8 @@ export interface User {
   rol: Rol;
   rut?: string;
   especialidad?: string;
-  numeroRegistro?: string;
-  regionTrabajo?: string;
+  numero_registro?: string;
+  region_trabajo?: string;
   titulos?: string[];
   telefono?: string;
   activo?: boolean;

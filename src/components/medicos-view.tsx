@@ -178,13 +178,13 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
       return;
     }
 
-    const numeroRegistro = ((formData.get('numeroRegistro') as string) || '').trim();
-    if (!/^\d{1,6}$/.test(numeroRegistro)) {
+    const numero_registro = ((formData.get('numero_registro') as string) || '').trim();
+    if (!/^\d{1,6}$/.test(numero_registro)) {
       toast.error('El número de registro debe tener máximo 6 dígitos numéricos');
       return;
     }
     const regDuplicado = medicos.some((m) =>
-      (m as any).numeroRegistro === numeroRegistro && (!editingMedico || m.id !== editingMedico.id)
+      (m as any).numero_registro === numero_registro && (!editingMedico || m.id !== editingMedico.id)
     );
     if (regDuplicado) {
       toast.error('Ya existe un médico con este número de registro');
@@ -207,7 +207,7 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
     const nombre = formData.get('nombre') as string;
     const especialidad = formData.get('especialidad') as string;
     const telefono = formData.get('telefono') as string;
-  const regionTrabajo = formData.get('regionTrabajo') as string;
+  const region_trabajo = formData.get('region_trabajo') as string;
   const titulos = (formData.getAll('titulos') as string[]).map((t) => t.trim()).filter(Boolean);
 
     // Validaciones (consistentes con PacientesView)
@@ -234,7 +234,7 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
     }
 
     // Región de trabajo
-    if (!regionTrabajo || !REGIONES_CHILE.includes(regionTrabajo)) {
+    if (!region_trabajo || !REGIONES_CHILE.includes(region_trabajo)) {
       toast.error('Seleccione una región de trabajo válida');
       return;
     }
@@ -274,8 +274,8 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
       rut,
       email,
       nombre,
-      numeroRegistro,
-      regionTrabajo,
+      numero_registro,
+      region_trabajo,
       titulos,
       especialidad,
       telefono,
@@ -319,8 +319,8 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
     m.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (m.especialidad && m.especialidad.toLowerCase().includes(searchTerm.toLowerCase())) ||
     ((m as any).rut && String((m as any).rut).toLowerCase().includes(searchTerm.toLowerCase())) ||
-    ((m as any).numeroRegistro && String((m as any).numeroRegistro).toLowerCase().includes(searchTerm.toLowerCase())) ||
-    ((m as any).regionTrabajo && String((m as any).regionTrabajo).toLowerCase().includes(searchTerm.toLowerCase())) ||
+    ((m as any).numero_registro && String((m as any).numero_registro).toLowerCase().includes(searchTerm.toLowerCase())) ||
+    ((m as any).region_trabajo && String((m as any).region_trabajo).toLowerCase().includes(searchTerm.toLowerCase())) ||
     (((m as any).titulos ?? []).some((t: string) => t.toLowerCase().includes(searchTerm.toLowerCase())))
   );
 
@@ -411,11 +411,11 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                       <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">{(medico as any).rut || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{medico.nombre}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{medico.email}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{(medico as any).numeroRegistro || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{(medico as any).numero_registro || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {medico.especialidad || '-'}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{(medico as any).regionTrabajo || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{(medico as any).region_trabajo || '-'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {((medico as any).titulos ?? []).length
                           ? ((medico as any).titulos as string[]).join(', ')
@@ -487,8 +487,8 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                   <div className="text-xs text-gray-500">{medico.email}</div>
                   <div className="text-xs text-gray-500">{(medico as any).telefono || '-'}</div>
                   <div className="text-xs text-gray-500">RUT: {(medico as any).rut || '-'}</div>
-                  <div className="text-xs text-gray-500">Reg.: {(medico as any).numeroRegistro || '-'}</div>
-                  <div className="text-xs text-gray-500">Región: {(medico as any).regionTrabajo || '-'}</div>
+                  <div className="text-xs text-gray-500">Reg.: {(medico as any).numero_registro || '-'}</div>
+                  <div className="text-xs text-gray-500">Región: {(medico as any).region_trabajo || '-'}</div>
                   <div className="text-xs text-gray-500">Títulos: {((medico as any).titulos ?? []).join(', ') || '-'}</div>
                 </div>
                 <div className="ml-3 flex flex-col items-end gap-2">
@@ -570,12 +570,12 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                 <div>
                   <label className="block text-sm mb-1 text-gray-700">N° Registro (máx. 6 dígitos)</label>
                   <input
-                    name="numeroRegistro"
+                    name="numero_registro"
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]{1,6}"
                     maxLength={6}
-                    defaultValue={(editingMedico as any)?.numeroRegistro}
+                    defaultValue={(editingMedico as any)?.numero_registro}
                     onInput={(e) => {
                       const target = e.currentTarget;
                       const digits = target.value.replace(/[^0-9]/g, '').slice(0, 6);
@@ -618,8 +618,8 @@ const updateHorarioField = (id?: string, field?: 'dia' | 'inicio' | 'fin', value
                 <div>
                   <label className="block text-sm mb-1 text-gray-700">Región de trabajo</label>
                   <select
-                    name="regionTrabajo"
-                    defaultValue={(editingMedico as any)?.regionTrabajo || REGIONES_CHILE[0]}
+                    name="region_trabajo"
+                    defaultValue={(editingMedico as any)?.region_trabajo || REGIONES_CHILE[0]}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >

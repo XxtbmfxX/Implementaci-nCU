@@ -254,7 +254,7 @@ export class SupabaseApiClient implements IApiClient {
       .from('audit_logs')
       .select('*', { count: 'exact' })
       .range(from, to)
-      .order('timestamp', { ascending: false });
+      .order('fecha', { ascending: false });
 
     if (error) throw error;
 
