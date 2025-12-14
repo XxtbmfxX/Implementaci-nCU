@@ -76,7 +76,14 @@
     },
     "scripts": {
         "dev": "vite",
+        "dev:prod": "vite --mode production",
         "build": "tsc -b && vite build",
-        "lint": "eslint ."
+        "preview": "vite preview",
+        "lint": "eslint .",
+        "supabase:init": "supabase init",
+        "supabase:start": "supabase start",
+        "supabase:stop": "supabase stop",
+        "supabase:migrate": "supabase migration up",
+        "supabase:new:migration": "supabase migration new"
     }
 }
