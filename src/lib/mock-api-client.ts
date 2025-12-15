@@ -15,6 +15,14 @@ import type {
 } from '../domain/types';
 import type { IApiClient } from './api-contracts';
 
+const STORAGE_KEYS = {
+  PACIENTES: 'mock_pacientes',
+  MEDICOS: 'mock_medicos',
+  CITAS: 'mock_citas',
+  FICHAS: 'mock_fichas',
+  AUDIT: 'mock_audit_logs',
+};
+
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function normalizeRutValue(input?: string | null): string {
@@ -31,16 +39,44 @@ function cloneArray<T>(items: T[]): T[] {
   return items.map((item) => ({ ...item }));
 }
 
-  export class MockApiClient implements IApiClient {
-    private token: string | null = null;
-    private pacientes: Paciente[] = [];
-    private medicos: User[] = [];
-    private citas: Cita[] = [];
-    private fichas: FichaClinica[] = [];
-    private auditLogs: AuditLog[] = [];
+export class MockApiClient implements IApiClient {
+  private token: string | null = null;
+  private pacientes: Paciente[] = [];
+  private medicos: User[] = [];
+  private citas: Cita[] = [];
+  private fichas: FichaClinica[] = [];
+  private auditLogs: AuditLog[] = [];
 
   constructor() {
-    this.resetData();
+    if (!this.loadFromStorage()) {
+      this.resetData();
+    }
+  }
+
+  private loadFromStorage(): boolean {
+    const p = localStorage.getItem(STORAGE_KEYS.PACIENTES);
+    const m = localStorage.getItem(STORAGE_KEYS.MEDICOS);
+    const c = localStorage.getItem(STORAGE_KEYS.CITAS);
+    const f = localStorage.getItem(STORAGE_KEYS.FICHAS);
+    const a = localStorage.getItem(STORAGE_KEYS.AUDIT);
+
+    if (p && m && c && f && a) {
+      this.pacientes = JSON.parse(p);
+      this.medicos = JSON.parse(m);
+      this.citas = JSON.parse(c);
+      this.fichas = JSON.parse(f);
+      this.auditLogs = JSON.parse(a);
+      return true;
+    }
+    return false;
+  }
+
+  private saveToStorage() {
+    localStorage.setItem(STORAGE_KEYS.PACIENTES, JSON.stringify(this.pacientes));
+    localStorage.setItem(STORAGE_KEYS.MEDICOS, JSON.stringify(this.medicos));
+    localStorage.setItem(STORAGE_KEYS.CITAS, JSON.stringify(this.citas));
+    localStorage.setItem(STORAGE_KEYS.FICHAS, JSON.stringify(this.fichas));
+    localStorage.setItem(STORAGE_KEYS.AUDIT, JSON.stringify(this.auditLogs));
   }
 
   public resetData() {
@@ -49,6 +85,7 @@ function cloneArray<T>(items: T[]): T[] {
     this.citas = createInitialCitas(this.pacientes, this.medicos);
     this.fichas = cloneArray(initialFichas);
     this.auditLogs = cloneArray(initialAuditLogs);
+    this.saveToStorage();
   }
 
   setToken(token: string | null) {
@@ -57,7 +94,8 @@ function cloneArray<T>(items: T[]): T[] {
       localStorage.setItem('auth_token', token);
     } else {
       localStorage.removeItem('auth_token');
-      this.resetData();
+      // No reseteamos los datos al cerrar sesión para mantener la persistencia
+      // this.resetData();
     }
   }
 
@@ -145,6 +183,7 @@ function cloneArray<T>(items: T[]): T[] {
       id: String(Date.now()),
     };
     this.pacientes.push(newPaciente);
+    this.saveToStorage();
     return newPaciente;
   }
 
@@ -171,6 +210,7 @@ function cloneArray<T>(items: T[]): T[] {
       ...(normalizedRut !== undefined ? { rut: normalizedRut } : {}),
     };
     this.pacientes[idx] = updated;
+    this.saveToStorage();
     return updated;
   }
 
@@ -178,6 +218,7 @@ function cloneArray<T>(items: T[]): T[] {
     await delay();
     this.pacientes = this.pacientes.filter((p) => p.id !== id);
     this.citas = this.citas.filter((c) => c.paciente_id !== id);
+    this.saveToStorage();
     return { success: true } as const;
   }
 
@@ -205,6 +246,7 @@ function cloneArray<T>(items: T[]): T[] {
       medico,
     };
     this.citas.push(newCita);
+    this.saveToStorage();
     return newCita;
   }
 
@@ -269,12 +311,14 @@ function cloneArray<T>(items: T[]): T[] {
       detalles: JSON.stringify({ de: current.estado, a: nextEstado }),
     });
 
+    this.saveToStorage();
     return updated;
   }
 
   async deleteCita(id: string) {
     await delay();
     this.citas = this.citas.filter((c) => c.id !== id);
+    this.saveToStorage();
     return { success: true } as const;
   }
 
@@ -296,6 +340,7 @@ function cloneArray<T>(items: T[]): T[] {
       addenda: [],
     };
     this.fichas.push(newFicha);
+    this.saveToStorage();
     return newFicha;
   }
 
@@ -318,6 +363,7 @@ function cloneArray<T>(items: T[]): T[] {
     const addenda = Array.isArray(ficha.addenda) ? [...ficha.addenda, addendum] : [addendum];
     const updated: FichaClinica = { ...ficha, addenda };
     this.fichas[idx] = updated;
+    this.saveToStorage();
     return updated;
   }
 
@@ -351,17 +397,18 @@ function cloneArray<T>(items: T[]): T[] {
       if (existsRut) throw new Error('Ya existe un médico con este RUT');
     }
 
-    const registro = (data as any).numeroRegistro as string | undefined;
+    const registro = (data as any).numero_registro as string | undefined;
     if (registro) {
       if (!/^\d{1,6}$/.test(registro)) {
         throw new Error('El número de registro debe tener máximo 6 dígitos');
       }
-      const existsReg = this.medicos.some((m) => (m as any).numeroRegistro === registro);
+      const existsReg = this.medicos.some((m) => (m as any).numero_registro === registro);
       if (existsReg) throw new Error('Ya existe un médico con este número de registro');
     }
 
     const newMedico: User = { ...data, rut: normalizedRut || undefined, id: String(Date.now()) };
     this.medicos.push(newMedico);
+    this.saveToStorage();
     return newMedico;
   }
 
@@ -377,11 +424,11 @@ function cloneArray<T>(items: T[]): T[] {
       if (existsRut) throw new Error('Ya existe un médico con este RUT');
     }
 
-    if (data.numeroRegistro !== undefined) {
-      if (data.numeroRegistro && !/^\d{1,6}$/.test(data.numeroRegistro)) {
+    if (data.numero_registro !== undefined) {
+      if (data.numero_registro && !/^\d{1,6}$/.test(data.numero_registro)) {
         throw new Error('El número de registro debe tener máximo 6 dígitos');
       }
-      const existsReg = this.medicos.some((m, i) => i !== idx && (m as any).numeroRegistro === data.numeroRegistro);
+      const existsReg = this.medicos.some((m, i) => i !== idx && (m as any).numero_registro === data.numero_registro);
       if (existsReg) throw new Error('Ya existe un médico con este número de registro');
     }
 
@@ -391,6 +438,7 @@ function cloneArray<T>(items: T[]): T[] {
       ...(normalizedRut !== undefined ? { rut: normalizedRut } : {}),
     } as User;
     this.medicos[idx] = updated;
+    this.saveToStorage();
     return updated;
   }
 
@@ -398,6 +446,7 @@ function cloneArray<T>(items: T[]): T[] {
     await delay();
     this.medicos = this.medicos.filter((m) => m.id !== id);
     this.citas = this.citas.filter((c) => c.medico_id !== id);
+    this.saveToStorage();
     return { success: true } as const;
   }
 }
