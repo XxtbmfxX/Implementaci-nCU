@@ -40,16 +40,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log(`🔐 Intentando iniciar sesión con: ${email}`);
       const { user: loginUser, token } = await apiClient.login(email, password);
+      console.log('✅ Login exitoso. Token recibido.');
       apiClient.setToken(token);
       const currentUser = await apiClient.getCurrentUser().catch(() => loginUser);
       setUser(currentUser);
     } catch (err) {
+      console.error('❌ Error en login:', err);
       throw err;
     }
   };
 
   const logout = () => {
+    console.log('👋 Cerrando sesión...');
     apiClient.setToken(null);
     setUser(null);
     // Si quieres asegurar 100% limpieza visual:
@@ -60,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return false;
 
     const permissions: Record<string, string[]> = {
-      MEDICO:[
+      MEDICO: [
         'ver_fichas',
         'crear_fichas',
         'ver_citas_propias',
@@ -72,14 +76,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'actualizar_pacientes',
         'ver_agenda',
         'gestionar_citas',
-        'ver_medicos' 
+        'ver_medicos'
       ],
       GERENTE: [
         'ver_logs',
         'gestionar_usuarios',
         'ver_reportes',
         'configurar_sistema',
-        'ver_medicos' 
+        'ver_medicos'
       ],
     };
 

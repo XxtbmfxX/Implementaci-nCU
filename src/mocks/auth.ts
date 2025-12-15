@@ -7,21 +7,21 @@ const usersByEmail: Record<string, User & { password: string }> = {
     nombre: 'Dr. Juan Pérez',
     rol: 'MEDICO',
     especialidad: 'Medicina General',
-    password: 'password',
+    password: 'password123',
   },
   'secretaria@clinica.cl': {
     id: '2',
     email: 'secretaria@clinica.cl',
     nombre: 'María González',
     rol: 'SECRETARIA',
-    password: 'password',
+    password: 'password123',
   },
   'gerente@clinica.cl': {
     id: '3',
     email: 'gerente@clinica.cl',
     nombre: 'Carlos Rodríguez',
     rol: 'GERENTE',
-    password: 'password',
+    password: 'password123',
   },
 };
 

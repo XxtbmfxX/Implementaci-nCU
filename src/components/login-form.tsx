@@ -88,9 +88,9 @@ export function LoginForm() {
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500 mb-2">Usuarios de prueba:</p>
             <div className="space-y-1 text-xs text-gray-600">
-              <p>• medico@clinica.cl / password</p>
-              <p>• secretaria@clinica.cl / password</p>
-              <p>• gerente@clinica.cl / password</p>
+              <p>• medico@clinica.cl / password123</p>
+              <p>• secretaria@clinica.cl / password123</p>
+              <p>• gerente@clinica.cl / password123</p>
             </div>
           </div>
         </div>
